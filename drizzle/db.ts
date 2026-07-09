@@ -1,6 +1,9 @@
-// Make sure to install the '@neondatabase/serverless' package
 import { drizzle } from "drizzle-orm/neon-http";
+import * as schema from "@/drizzle/schema";
 
-export const db = drizzle(process.env.DATABASE_URL!);
+// Merge schema and relations into a single object
+const fullSchema = {
+  ...schema,
+};
 
-const result = await db.execute("select 1");
+export const db = drizzle(process.env.DATABASE_URL!, { schema: fullSchema });

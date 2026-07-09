@@ -41,9 +41,10 @@ const Signup = () => {
     }
   }
   return (
-    <div>
-      <div>
-        <h1 className="text-2xl font-bold text-center">Create your account</h1>
+    <div className=" grid grid-cols-2 ">
+      <div>hhhh</div>
+      <div className=" items-center  mt-20 px-20">
+        <h1 className="text-2xl text-4xl ">Get Started </h1>
         <form onSubmit={handleSubmit(handleSignUp)}>
           <div>
             <label htmlFor="name">Name</label>

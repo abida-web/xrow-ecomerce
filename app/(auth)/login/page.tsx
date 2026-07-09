@@ -39,8 +39,9 @@ const Login = () => {
     }
   }
   return (
-    <div>
-      <div>
+    <div className=" grid grid-cols-2">
+      <div>hh</div>
+      <div className="flex flex-col">
         <h1 className="text-2xl font-bold text-center">
           Log In to your account
         </h1>
