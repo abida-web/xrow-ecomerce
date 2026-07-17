@@ -72,7 +72,7 @@ const Sidbar = ({ storeSlug }: { storeSlug: string }) => {
 
       {/* Sidebar */}
       <aside
-        className={`  bg-gradient-to-b from-black via-white/20 to fixed left-0 top-0 h-full w-64 px-5 border-r border-gray-500 shadow-sm  transition-transform duration-300 z-50 ${
+        className={`  bg-gradient-to-b from-black via-gray-600 to-black fixed left-0 top-0 h-full w-64 px-5 border-r border-gray-500 shadow-sm  transition-transform duration-300 z-50 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
