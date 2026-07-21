@@ -45,9 +45,22 @@ const ProductsPage = () => {
     setPage((prev) => prev - 1);
   };
   const displayProducts = data?.productListData;
-  if (!data) {
-    throw new Error("data doesn't exist");
+  if (!data || !data.productListData) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-400">
+          No products found. Create your first product!
+        </p>
+        <Link
+          href={`/dashboard/${storeslug}/products/new`}
+          className="inline-block mt-4 bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+        >
+          Add Product
+        </Link>
+      </div>
+    );
   }
+
   return (
     <div className="">
       <div className="flex flex-wrap  justify-between items-center mb-6">

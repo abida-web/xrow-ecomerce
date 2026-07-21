@@ -155,3 +155,17 @@ export const removeVariant = async ({
   const remove = await db.delete(variants).where(eq(variants.id, variantId));
   return { success: true };
 };
+export const getProductDetail = async (productId: string) => {
+  const product = await db.query.products.findFirst({
+    where: and(eq(products.id, productId)),
+    with: {
+      variants: true,
+      images: true,
+      category: true,
+    },
+  });
+  if (!product) {
+    throw new Error("Product not exist");
+  }
+  return product;
+};

@@ -6,6 +6,7 @@ import {
   products,
   variants,
 } from "./schema";
+import { cart, cartItem } from "./schemas/cart-schema";
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
@@ -35,5 +36,23 @@ export const productImagesRelations = relations(productImages, ({ one }) => ({
   product: one(products, {
     fields: [productImages.productId],
     references: [products.id],
+  }),
+}));
+export const cartsRelations = relations(cart, ({ one, many }) => ({
+  user: one(organization, {
+    fields: [cart.userId],
+    references: [organization.id],
+  }),
+  items: many(cartItem),
+}));
+
+export const cartItemsRelations = relations(cartItem, ({ one }) => ({
+  cart: one(cart, {
+    fields: [cartItem.cartId],
+    references: [cart.id],
+  }),
+  variant: one(variants, {
+    fields: [cartItem.variantId],
+    references: [variants.id],
   }),
 }));

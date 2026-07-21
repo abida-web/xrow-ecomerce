@@ -54,6 +54,7 @@ const ProductForm = ({
         weight: intialData.weight || "",
         weightUnit: intialData.weightUnit || "g",
         images: intialData.images || [],
+        variants: intialData.variants || [],
       });
     }
   }, [intialData, type, setProductForm, setCurrentVariant]);
@@ -72,6 +73,7 @@ const ProductForm = ({
         weight: "",
         weightUnit: "g",
         images: [],
+        variants: [],
       });
     }
   }, [type, setProductForm, setCurrentVariant]);
