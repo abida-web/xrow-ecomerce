@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = "force-dynamic";
 import { useQuery } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
 import ProductCard from "../_components/ProductCard";
@@ -138,7 +139,7 @@ const ProductsPage = () => {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
           {data.map((product: any, i: number) => (
-            <ProductCard product={product} key={i} />
+            <ProductCard product={product} key={product.id} />
           ))}
         </div>
       )}
