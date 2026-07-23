@@ -32,7 +32,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <img
             src={imageUrl}
             alt={product.name || "Product"}
-            className="w-full h-60 object-cover"
+            className="w-full h-0 object-cover"
             onError={(e) => {
               (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
             }}
