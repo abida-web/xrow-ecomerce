@@ -10,17 +10,19 @@ import { and, eq, ilike, or, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
-  const { searchParams } = await new URL(req.url);
+  const { searchParams } = new URL(req.url);
   const search = searchParams.get("search");
   const category = searchParams.get("category");
   const minPrice = searchParams.get("minPrice");
   const maxPrice = searchParams.get("maxPrice");
   const pageparam = searchParams.get("page");
   const page = pageparam ? parseInt(pageparam) : 1;
-  const limit = 3;
+  const limit = 11;
   const offset = (page - 1) * limit;
+
+  // Use DISTINCT ON to get unique products
   let query: any = db
-    .select({
+    .selectDistinctOn([products.id], {
       id: products.id,
       name: products.name,
       brand: products.brand,
@@ -51,15 +53,15 @@ export async function GET(req: Request) {
   }
 
   if (category) {
-    filters.push(eq(categories.name, category)); // Fixed: use categories.name
+    filters.push(eq(categories.name, category));
   }
 
   if (minPrice) {
-    filters.push(sql`${variants.price} >= ${minPrice}`); // Fixed: >= for minPrice
+    filters.push(sql`${variants.price} >= ${minPrice}`);
   }
 
   if (maxPrice) {
-    filters.push(sql`${variants.price} <= ${maxPrice}`); // Fixed: <= for maxPrice
+    filters.push(sql`${variants.price} <= ${maxPrice}`);
   }
 
   if (filters.length > 0) {
@@ -68,5 +70,5 @@ export async function GET(req: Request) {
 
   const results = await query.limit(limit).offset(offset);
 
-  return NextResponse.json(results); // Fixed: return the results
+  return NextResponse.json(results);
 }

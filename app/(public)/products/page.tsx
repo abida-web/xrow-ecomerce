@@ -27,7 +27,7 @@ const ProductsPage = () => {
   };
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["products", searchTerm, selectCategory, selectPriceRange], // Fixed: use actual values not objects
+    queryKey: ["products", searchTerm, selectCategory, selectPriceRange, page], // Fixed: use actual values not objects
     queryFn: async () => {
       const response = await fetch(`/api/public/products?${getQueryParams()}`);
       return await response.json();
@@ -35,8 +35,16 @@ const ProductsPage = () => {
   });
 
   // Fixed: safely get categories
-  const categories = [...new Set(data?.map((p: any) => p.category))];
-
+  const categories = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    const categorySet = new Set();
+    data.forEach((p: any) => {
+      if (p.category) {
+        categorySet.add(p.category);
+      }
+    });
+    return Array.from(categorySet);
+  }, [data]);
   const getUniqueProducts = (product: any) => {
     const seen = new Set();
     return product.filter((p: any) => {
@@ -129,7 +137,7 @@ const ProductsPage = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
-          {getUniqueProducts(data).map((product: any, i: number) => (
+          {data.map((product: any, i: number) => (
             <ProductCard product={product} key={i} />
           ))}
         </div>

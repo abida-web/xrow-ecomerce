@@ -31,14 +31,17 @@ const Navbar = () => {
 
     enabled: searchTerm.trim().length > 0,
   });
-  const getUniqueSearchName = (product: any) => {
-    const seen = new Set();
-    return product.filter((p: any) => {
-      const dub = seen.has(p.id);
-      seen.add(p.id);
-      return !dub;
-    });
-  };
+  const { data: cartItems, isLoading } = useQuery({
+    queryKey: ["cart"],
+    queryFn: async () => {
+      const res = await fetch("/api/cart/items", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch cart");
+      return res.json();
+    },
+  });
+
   const router = useRouter();
   return (
     <>
@@ -75,7 +78,7 @@ const Navbar = () => {
             {/* Results dropdown */}
             {data && data.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
-                {getUniqueSearchName(data).map((sp: any, i: number) => (
+                {data.map((sp: any, i: number) => (
                   <div
                     key={i}
                     className="px-4 py-2 hover:bg-white/10 cursor-pointer"
@@ -100,10 +103,13 @@ const Navbar = () => {
           <button className="hover:text-orange-500 transition-colors">
             <User size={20} />
           </button>
-          <button className="hover:text-orange-500 transition-colors relative">
+          <button
+            onClick={() => router.push("/cart")}
+            className="hover:text-orange-500 transition-colors relative"
+          >
             <ShoppingCart size={20} />
             <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-              0
+              {cartItems?.totalCartItems || 0}
             </span>
           </button>
         </div>
@@ -129,7 +135,7 @@ const Navbar = () => {
           {/* Results dropdown */}
           {data && data.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
-              {getUniqueSearchName(data).map((sp: any, i: number) => (
+              {data.map((sp: any, i: number) => (
                 <div
                   key={i}
                   className="px-4 py-2 hover:bg-white/10 cursor-pointer"
@@ -152,10 +158,13 @@ const Navbar = () => {
           )}
         </div>
 
-        <button className="hover:text-orange-500 transition-colors relative">
+        <button
+          onClick={() => router.push("/cart")}
+          className="hover:text-orange-500 transition-colors relative"
+        >
           <ShoppingCart size={20} />
           <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-            0
+            {cartItems?.totalCartItems || 0}
           </span>
         </button>
       </div>

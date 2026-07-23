@@ -4,6 +4,8 @@ import { getProductDetail } from "@/app/actions/product-actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useQuantityStore } from "@/store/cart-store";
+
 interface ImageProps {
   id: string;
   createdAt: Date | null;
@@ -11,6 +13,7 @@ interface ImageProps {
   url: string;
   isPrimary: boolean | null;
 }
+
 interface VariantProps {
   id: string;
   createdAt: Date | null;
@@ -25,6 +28,7 @@ interface VariantProps {
   option3: string | null;
   option3Value: string | null;
 }
+
 export default function ProductDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -32,13 +36,17 @@ export default function ProductDetailPage() {
   const [selectedVariant, setSelectedVariant] = useState<VariantProps | null>(
     null,
   );
-  const [quantity, setQuantity] = useState(1);
+
+  // Use Zustand for quantity
+  const { quantity, setQuantity, reset } = useQuantityStore();
+
   const queryClient = useQueryClient();
 
   const { data: product } = useQuery({
     queryKey: ["product", id],
     queryFn: () => getProductDetail(id),
   });
+
   const { data: cartItems, isLoading } = useQuery({
     queryKey: ["cart"],
     queryFn: async () => {
@@ -53,10 +61,12 @@ export default function ProductDetailPage() {
   const handleImageSelection = (img: ImageProps) => {
     setSelectedImage(img);
   };
+
   const handleVariantSelection = (vari: VariantProps) => {
     setSelectedVariant(vari);
-    setQuantity(1);
+    reset(); // Reset quantity to 1 when variant changes
   };
+
   const primaryImage = product?.images?.find((img) => img.isPrimary);
   const currentImage = selectedImage || primaryImage;
   const currentVariant = selectedVariant || product?.variants?.[0];
@@ -90,11 +100,11 @@ export default function ProductDetailPage() {
 
   const updateQuantityMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/cart/items/${selectedVariant?.id}`, {
+      const res = await fetch(`/api/cart/items/${currentVariant?.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ quantity: quantity }),
+        body: JSON.stringify({ quantity: Number(quantity) }),
       });
 
       if (!res.ok) {
@@ -113,45 +123,53 @@ export default function ProductDetailPage() {
     e.preventDefault();
     if (!currentVariant) return;
     if (quantity < 1 || quantity > currentVariant.stock) return;
-    const exsitingItem = cartItems?.find(
-      (item: any) => item.variantId === selectedVariant?.id,
+
+    const existingItem = cartItems?.userCartItems?.find(
+      (item: any) => item.variantId === currentVariant?.id,
     );
-    if (exsitingItem) {
+
+    if (existingItem) {
       updateQuantityMutation.mutate();
     } else {
       addtoCartMutation.mutate();
     }
   };
-  const existinItem = cartItems?.find(
-    (item: any) => item.variantId === selectedVariant?.id,
+
+  const existingItem = cartItems?.userCartItems?.find(
+    (item: any) => item.variantId === currentVariant?.id,
   );
+
   useEffect(() => {
-    if (existinItem) {
-      setQuantity(existinItem.quantity);
+    if (existingItem) {
+      setQuantity(existingItem.quantity);
     } else {
-      setQuantity(1);
+      reset();
     }
-  }, [existinItem, currentVariant?.id]);
+  }, [existingItem, currentVariant?.id, setQuantity, reset]);
+
   const handleQuantityChange = (newQuantity: number) => {
     if (!currentVariant) return;
     if (newQuantity < 1 || newQuantity > currentVariant.stock) return;
     setQuantity(newQuantity);
-    if (existinItem) {
+
+    if (existingItem) {
       const timer = setTimeout(() => {
         updateQuantityMutation.mutate();
       }, 300);
       return () => clearTimeout(timer);
     }
   };
+
   if (isLoading) {
     return <p>is loading</p>;
   }
+
   return (
     <div className="container mx-auto px-4 py-4">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="flex flex-col">
           <img
-            className=" lg:max-h-200 max-h-150 w-full object-cover rounded-lg"
+            className="lg:max-h-200 max-h-150 w-full object-cover rounded-lg"
             src={currentImage?.url}
           />
 
@@ -170,7 +188,7 @@ export default function ProductDetailPage() {
           <p className="text-sm text-gray-400">{product?.category?.name}</p>
           <h1 className="py-2 text-2xl md:text-3xl">{product?.name}</h1>
           <div className="flex gap-4 text-base md:text-lg">
-            <p className="text-orange-500"> afg{currentVariant?.price}</p>
+            <p className="text-orange-500">afg{currentVariant?.price}</p>
             <p className="line-through text-gray-400">
               afg{product?.comparePriceAt}
             </p>
@@ -201,7 +219,7 @@ export default function ProductDetailPage() {
             ))}
           </div>
           <div className="mb-5 flex flex-wrap gap-5 items-center">
-            <div className="flex flex-col gap-5 mt-5 p-4 md:p-5 w-full  bg-gray-900 border-gray-600 border rounded-lg">
+            <div className="flex flex-col gap-5 mt-5 p-4 md:p-5 w-full bg-gray-900 border-gray-600 border rounded-lg">
               <div className="flex flex-wrap justify-between gap-2">
                 <span className="text-gray-400">Stock:</span>
                 <span>{currentVariant?.stock}</span>
@@ -250,7 +268,8 @@ export default function ProductDetailPage() {
               <button
                 type="button"
                 onClick={() => handleQuantityChange(quantity - 1)}
-                className="px-4 py-2 text-white hover:bg-gray-700 text-xl font-bold"
+                disabled={quantity <= 1}
+                className="px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-xl font-bold"
               >
                 -
               </button>
@@ -259,8 +278,9 @@ export default function ProductDetailPage() {
               </span>
               <button
                 type="button"
-                onClick={() => handleQuantityChange(quantity + 1)}
-                className="px-4 py-2 text-white hover:bg-gray-700 text-xl font-bold"
+                onClick={() => handleQuantityChange(Number(quantity + 1))}
+                disabled={quantity >= (currentVariant?.stock || 0)}
+                className="px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-xl font-bold"
               >
                 +
               </button>
@@ -269,12 +289,17 @@ export default function ProductDetailPage() {
               type="submit"
               disabled={
                 addtoCartMutation.isPending ||
+                updateQuantityMutation.isPending ||
                 !currentVariant ||
                 currentVariant?.stock === 0
               }
               className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 flex-1 text-white font-bold py-3 px-8 rounded-lg transition-colors"
             >
-              {addtoCartMutation.isPending ? "Adding..." : "Add to Cart"}
+              {addtoCartMutation.isPending || updateQuantityMutation.isPending
+                ? "Processing..."
+                : existingItem
+                  ? "Update Cart"
+                  : "Add to Cart"}
             </button>
           </form>
         </div>
@@ -282,4 +307,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-///update the route to use variantId instead of cartItemId

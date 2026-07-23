@@ -85,3 +85,50 @@ export async function PATCH(
     );
   }
 }
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ variantId: string }> },
+) {
+  try {
+    const { variantId } = await params;
+
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    // First get the user's cart
+    const userCart = await db
+      .select({ id: cart.id })
+      .from(cart)
+      .where(eq(cart.userId, userId))
+      .limit(1);
+
+    if (!userCart.length) {
+      return NextResponse.json({ error: "Cart not found" }, { status: 404 });
+    }
+
+    const cartId = userCart[0].id;
+    const deleteItem = await db
+      .delete(cartItem)
+      .where(
+        and(eq(cartItem.cartId, cartId), eq(cartItem.variantId, variantId)),
+      )
+      .returning();
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Cart item successfully",
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Error updating cart item:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}

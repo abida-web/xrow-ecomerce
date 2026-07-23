@@ -1,7 +1,7 @@
 import { db } from "@/drizzle/db";
 import { cart, cartItem, user } from "@/drizzle/schema";
 import { auth } from "@/lib/auth";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -27,13 +27,22 @@ export async function GET() {
       with: {
         variant: {
           with: {
-            product: true,
+            product: {
+              with: {
+                images: {
+                  columns: {
+                    url: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
     });
-
-    return NextResponse.json(userCartItems);
+    const [result] = await db.select({ total: count() }).from(cartItem);
+    const totalCartItems = result?.total;
+    return NextResponse.json({ userCartItems, totalCartItems });
   } catch (error) {
     console.error("Error fetching cart:", error);
     return NextResponse.json(
