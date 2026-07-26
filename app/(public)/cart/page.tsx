@@ -1,12 +1,26 @@
 "use client";
 
+import CustomInput from "@/app/(seller)/dashboard/_components/CustomeInput";
 import { useQuantityStore } from "@/store/cart-store";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MinusCircle, PlusCircle, Trash2 } from "lucide-react";
-import { useEffect } from "react";
+import { MinusCircle, PlusCircle, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const CartPage = () => {
+  const [address, setAddress] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    country: "US",
+    province: "",
+    city: "",
+    streetAddress: "",
+    postalCode: "",
+    isDefault: true,
+  });
+  const [openCheckoutModal, setOpenCheckoutModal] = useState(false);
   const queryClient = useQueryClient();
+
   const {
     data: cartItems,
     isLoading,
@@ -21,6 +35,7 @@ const CartPage = () => {
       return res.json();
     },
   });
+
   const updateQuantityMutation = useMutation({
     mutationFn: async ({
       variantId,
@@ -48,6 +63,7 @@ const CartPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });
+
   const deleteItemMutation = useMutation({
     mutationFn: async (variantId: string) => {
       const res = await fetch(`/api/cart/items/${variantId}`, {
@@ -67,8 +83,9 @@ const CartPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });
+
   const handleUpdateQuantity = (variantId: string, newQuantity: number) => {
-    const item = cartItems.userCartItems.find(
+    const item = cartItems?.userCartItems?.find(
       (item: any) => item.variantId === variantId,
     );
     if (!item) return;
@@ -83,9 +100,11 @@ const CartPage = () => {
 
     return () => clearTimeout(timer);
   };
+
   const handleDeleteItem = (variantId: string) => {
     deleteItemMutation.mutate(variantId);
   };
+
   const subTotal =
     cartItems?.userCartItems?.reduce((curr: any, acc: any) => {
       return curr + acc.quantity * acc?.variant?.price;
@@ -93,12 +112,15 @@ const CartPage = () => {
   const shipping = subTotal > 300 ? 0 : 10;
   const tax = subTotal > 1000 ? 10 : 0;
   const total = subTotal + shipping + tax;
-  const createOrderMutaion = useMutation({
+
+  const createOrderMutation = useMutation({
     mutationFn: async () => {
+      // Include address in the order
       const res = await fetch(`/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        body: JSON.stringify({ address }),
       });
 
       if (!res.ok) {
@@ -111,132 +133,339 @@ const CartPage = () => {
     onSuccess: () => {
       refetch();
       queryClient.invalidateQueries({ queryKey: ["cart"] });
+      setOpenCheckoutModal(false);
+      // Reset address form
+      setAddress({
+        fullName: "",
+        phone: "",
+        email: "",
+        country: "US",
+        province: "",
+        city: "",
+        streetAddress: "",
+        postalCode: "",
+        isDefault: true,
+      });
     },
   });
+
   const handlePlaceOrder = () => {
-    createOrderMutaion.mutate();
+    // Validate required fields
+    if (
+      !address.fullName ||
+      !address.phone ||
+      !address.streetAddress ||
+      !address.city
+    ) {
+      alert("Please fill in all required address fields");
+      return;
+    }
+    createOrderMutation.mutate();
   };
+
+  // Handle input change with proper typing
+  const handleAddressChange = (field: string, value: string) => {
+    setAddress((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   return (
     <div>
-      <h1 className="mb-5 text-2xl font-semibold">Shopping Cart</h1>
-      <div className=" grid lg:grid-cols-[800px_1fr] gap-5">
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-5">
-            {cartItems?.userCartItems?.map((item: any) => {
-              const subTotal = item.variant.price * item.quantity;
-              return (
-                <div key={item.id} className="flex items-center">
-                  <div className="grid grid-cols-4 items-center gap-5 flex-1 bg-gray-900 p-3 ">
-                    <img
-                      src={item.variant?.product?.images[0]?.url}
-                      className="w-[80px] h-[100px] object-cover rounded-lg"
+      <h1 className="mb-5 text-2xl font-semibold">
+        {openCheckoutModal ? "Checkout" : "Shopping Cart"}
+      </h1>
+      <div className="grid lg:grid-cols-[800px_1fr] gap-5">
+        {openCheckoutModal ? (
+          // ✅ Checkout Modal with Complete Address Fields
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h1 className="text-xl font-semibold">Shipping Address</h1>
+                <button
+                  onClick={() => setOpenCheckoutModal(false)}
+                  className="hover:bg-white/10 p-2 rounded-full transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="mt-5">
+                <div className="bg-white/5 rounded-lg p-5">
+                  {/* ✅ Full Name */}
+                  <div className="mb-4">
+                    <CustomInput
+                      label="Full Name *"
+                      name="fullName"
+                      value={address.fullName}
+                      onChange={(e) =>
+                        handleAddressChange("fullName", e.target.value)
+                      }
+                      placeholder="John Doe"
+                      required
                     />
-                    <div className=" flex flex-col gap-1">
-                      <p>{item.variant.product.name}</p>
-                      <p className=" text-gray-400 text-xs">
-                        #{item.variantId.slice(0, 10)}
-                      </p>
-                    </div>
-                    <div className="flex gap-5 items-center">
-                      <p className=" bg-white/10 py-1 text-xs px-1.5 rounded-full">
-                        {item.quantity}
-                      </p>
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() =>
-                            handleUpdateQuantity(
-                              item.variantId,
-                              Number(item.quantity) + 1,
-                            )
-                          }
-                        >
-                          <PlusCircle fill="oklch(70.5% 0.213 47.604)" />
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleUpdateQuantity(
-                              item.variantId,
-                              item.quantity - 1,
-                            )
-                          }
-                        >
-                          <MinusCircle fill="oklch(70.5% 0.213 47.604)" />
-                        </button>
-                      </div>
-                    </div>
-                    <p>
-                      <span className=" text-orange-500">afg</span>
-                      {subTotal}
-                    </p>
                   </div>
-                  <button
-                    onClick={() => handleDeleteItem(item.variantId)}
-                    className="ml-5 hover:text-red-800 hover:bg-red-600/20 p-2 transition-colors rounded-full"
-                  >
-                    <Trash2 size={20} className="" />
-                  </button>
+
+                  {/* ✅ Phone & Email */}
+                  <div className="grid gap-5 md:grid-cols-2 mb-4">
+                    <CustomInput
+                      label="Phone *"
+                      name="phone"
+                      value={address.phone}
+                      onChange={(e) =>
+                        handleAddressChange("phone", e.target.value)
+                      }
+                      placeholder="+1 234 567 8900"
+                      required
+                    />
+                    <CustomInput
+                      label="Email *"
+                      name="email"
+                      value={address.email}
+                      onChange={(e) =>
+                        handleAddressChange("email", e.target.value)
+                      }
+                      placeholder="john@example.com"
+                      type="email"
+                      required
+                    />
+                  </div>
+
+                  {/* ✅ Country & Province */}
+                  <div className="grid gap-5 md:grid-cols-2 mb-4">
+                    <CustomInput
+                      label="Country *"
+                      name="country"
+                      value={address.country}
+                      onChange={(e) =>
+                        handleAddressChange("country", e.target.value)
+                      }
+                      placeholder="United States"
+                      required
+                    />
+                    <CustomInput
+                      label="Province/State *"
+                      name="province"
+                      value={address.province}
+                      onChange={(e) =>
+                        handleAddressChange("province", e.target.value)
+                      }
+                      placeholder="California"
+                      required
+                    />
+                  </div>
+
+                  {/* ✅ City & Postal Code */}
+                  <div className="grid gap-5 md:grid-cols-2 mb-4">
+                    <CustomInput
+                      label="City *"
+                      name="city"
+                      value={address.city}
+                      onChange={(e) =>
+                        handleAddressChange("city", e.target.value)
+                      }
+                      placeholder="Los Angeles"
+                      required
+                    />
+                    <CustomInput
+                      label="Postal Code *"
+                      name="postalCode"
+                      value={address.postalCode}
+                      onChange={(e) =>
+                        handleAddressChange("postalCode", e.target.value)
+                      }
+                      placeholder="90001"
+                      required
+                    />
+                  </div>
+
+                  {/* ✅ Street Address */}
+                  <div className="mb-4">
+                    <CustomInput
+                      label="Street Address *"
+                      name="streetAddress"
+                      value={address.streetAddress}
+                      onChange={(e) =>
+                        handleAddressChange("streetAddress", e.target.value)
+                      }
+                      placeholder="123 Main Street, Apt 4B"
+                      required
+                    />
+                  </div>
+
+                  {/* ✅ Is Default Address */}
+                  <div className="flex items-center gap-3 mt-4">
+                    <input
+                      type="checkbox"
+                      id="isDefault"
+                      checked={address.isDefault}
+                      onChange={(e) =>
+                        handleAddressChange(
+                          "isDefault",
+                          e.target.checked as any,
+                        )
+                      }
+                      className="w-4 h-4 accent-orange-500"
+                    />
+                    <label
+                      htmlFor="isDefault"
+                      className="text-sm text-gray-300"
+                    >
+                      Save this address as default
+                    </label>
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+
+              <button
+                onClick={handlePlaceOrder}
+                disabled={createOrderMutation.isPending}
+                className="mt-5 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 py-3 flex justify-center items-center gap-2 rounded-lg w-full transition-colors"
+              >
+                {createOrderMutation.isPending
+                  ? "Placing Order..."
+                  : "Place Order"}
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-10">
-            <span className=" text-gray-400">Subtotal:</span>
-            <span className=" text-orange-500 font-semibold">
-              afg{subTotal}
-            </span>
+        ) : (
+          // ✅ Cart Items View
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-5">
+              {cartItems?.userCartItems?.map((item: any) => {
+                const subTotal = item.variant.price * item.quantity;
+                return (
+                  <div key={item.id} className="flex items-center">
+                    <div className="grid grid-cols-4 items-center gap-5 flex-1 bg-gray-900 p-3 rounded-lg">
+                      <img
+                        src={item.variant?.product?.images?.[0]?.url}
+                        className="w-[80px] h-[100px] object-cover rounded-lg"
+                        alt={item.variant?.product?.name}
+                      />
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium">
+                          {item.variant?.product?.name}
+                        </p>
+                        <p className="text-gray-400 text-xs">
+                          #{item.variantId.slice(0, 10)}
+                        </p>
+                        {item.variant?.option1 && (
+                          <p className="text-xs text-gray-400">
+                            {item.variant.option1}: {item.variant.option1Value}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-5 items-center">
+                        <p className="bg-white/10 py-1 text-xs px-1.5 rounded-full">
+                          {item.quantity}
+                        </p>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() =>
+                              handleUpdateQuantity(
+                                item.variantId,
+                                Number(item.quantity) + 1,
+                              )
+                            }
+                            className="hover:opacity-70 transition-opacity"
+                          >
+                            <PlusCircle
+                              fill="oklch(70.5% 0.213 47.604)"
+                              size={20}
+                            />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleUpdateQuantity(
+                                item.variantId,
+                                item.quantity - 1,
+                              )
+                            }
+                            className="hover:opacity-70 transition-opacity"
+                          >
+                            <MinusCircle
+                              fill="oklch(70.5% 0.213 47.604)"
+                              size={20}
+                            />
+                          </button>
+                        </div>
+                      </div>
+                      <p>
+                        <span className="text-orange-500">afg</span>
+                        {subTotal.toFixed(2)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteItem(item.variantId)}
+                      className="ml-5 hover:text-red-500 hover:bg-red-600/20 p-2 transition-colors rounded-full"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-10">
+              <span className="text-gray-400">Subtotal:</span>
+              <span className="text-orange-500 font-semibold">
+                afg{subTotal.toFixed(2)}
+              </span>
+            </div>
           </div>
-        </div>
-        <div className="w-full bg-gray-900 p-5 h-fit">
-          <h1 className=" pb-4 border-b border-gray-500 font-semibold">
+        )}
+
+        {/* ✅ Order Summary */}
+        <div className="w-full bg-gray-900 p-5 h-fit rounded-lg sticky top-5">
+          <h1 className="pb-4 border-b border-gray-500 font-semibold">
             Order Summary
           </h1>
-          <div className=" flex justify-between items-center mt-3">
-            <p className=" text-gray-400">Items</p>
-            <p>{cartItems?.totalCartItems}</p>
+          <div className="flex justify-between items-center mt-3">
+            <p className="text-gray-400">Items</p>
+            <p>{cartItems?.totalCartItems || 0}</p>
           </div>
-          <div className=" flex justify-between items-center mt-3">
-            <p className=" text-gray-400">Sub Total</p>
+          <div className="flex justify-between items-center mt-3">
+            <p className="text-gray-400">Sub Total</p>
             <p>
-              {" "}
-              <span className=" text-orange-500">afg</span>
-              {subTotal}
+              <span className="text-orange-500">afg</span>
+              {subTotal.toFixed(2)}
             </p>
           </div>
-          <div className=" flex justify-between items-center mt-3">
-            <p className=" text-gray-400">Sub Total</p>
+          <div className="flex justify-between items-center mt-3">
+            <p className="text-gray-400">Shipping</p>
             <p>
-              {" "}
-              <span className=" text-orange-500">afg</span>
-              {subTotal}
+              <span className="text-orange-500">afg</span>
+              {shipping.toFixed(2)}
             </p>
           </div>
-          <div className=" flex justify-between items-center mt-3">
-            <p className=" text-gray-400">Shipping</p>
+          <div className="flex justify-between items-center mt-3 mb-4 border-b pb-4 border-gray-500">
+            <p className="text-gray-400">Taxes</p>
             <p>
-              {" "}
-              <span className=" text-orange-500">afg</span>
-              {shipping}
+              <span className="text-orange-500">afg</span>
+              {tax.toFixed(2)}
             </p>
           </div>
-          <div className=" flex justify-between items-center mt-3 mb-4 border-b pb-4 border-gray-500">
-            <p className=" text-gray-400">Taxes</p>
-            <p>
-              <span className=" text-orange-500">afg</span>
-              {tax}
-            </p>
-          </div>
-          <div className=" flex justify-between items-center mt-3 mb-4">
-            <p className=" text-gray-400">Total</p>
-            <p>
-              <span className=" text-orange-500">afg</span>
-              {total}
+          <div className="flex justify-between items-center mt-3 mb-4">
+            <p className="text-gray-400 font-semibold">Total</p>
+            <p className="text-xl font-bold">
+              <span className="text-orange-500">afg</span>
+              {total.toFixed(2)}
             </p>
           </div>
           <button
-            onClick={handlePlaceOrder}
-            className="bg-orange-500 w-full hover:bg-orange-600 disabled:bg-gray-600 flex-1 text-white font-bold py-3 px-8 rounded-lg transition-colors"
+            onClick={
+              openCheckoutModal
+                ? handlePlaceOrder
+                : () => setOpenCheckoutModal(true)
+            }
+            disabled={!cartItems?.userCartItems?.length}
+            className="bg-orange-500 w-full hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-lg transition-colors"
           >
-            {createOrderMutaion.isPending ? "Placing order..." : "Place Order"}
+            {openCheckoutModal
+              ? createOrderMutation.isPending
+                ? "Placing order..."
+                : "Place Order"
+              : "Proceed to Checkout"}
           </button>
         </div>
       </div>

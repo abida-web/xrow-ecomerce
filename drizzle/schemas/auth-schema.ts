@@ -7,6 +7,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { address } from "./cart-schema";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -142,11 +143,12 @@ export const userRelations = relations(user, ({ many }) => ({
   invitations: many(invitation),
 }));
 
-export const sessionRelations = relations(session, ({ one }) => ({
+export const sessionRelations = relations(session, ({ one, many }) => ({
   user: one(user, {
     fields: [session.userId],
     references: [user.id],
   }),
+  addresses: many(address),
 }));
 
 export const accountRelations = relations(account, ({ one }) => ({

@@ -1,4 +1,5 @@
 "use client";
+import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useQuery } from "@tanstack/react-query";
 import { Menu, Search, ShoppingCart, User, X } from "lucide-react";
 import Link from "next/link";
@@ -14,17 +15,19 @@ const Navbar = () => {
   const path = usePathname();
   const [searchTerm, setSearchTerm] = useState("");
   const [openMenu, setOpenMenu] = useState(false);
-
+  const [debouncedQuery] = useDebouncedValue(searchTerm, {
+    wait: 500, // Wait 500ms after last change
+  });
   const isActive = (href: string) => {
     if (href === "" && path === "/") return true;
     if (href !== "" && path === href) return true;
     return false;
   };
   const { data } = useQuery({
-    queryKey: ["search", searchTerm],
+    queryKey: ["search", debouncedQuery],
     queryFn: async () => {
       const response = await fetch(
-        `api/public/products?search=${encodeURIComponent(searchTerm)}`,
+        `api/public/products?search=${encodeURIComponent(debouncedQuery)}`,
       );
       return await response.json();
     },

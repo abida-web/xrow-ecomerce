@@ -4,9 +4,17 @@ import {
   organization,
   productImages,
   products,
+  user,
   variants,
 } from "./schema";
-import { cart, cartItem } from "./schemas/cart-schema";
+import {
+  address,
+  cart,
+  cartItem,
+  order,
+  orderAddress,
+  orderItem,
+} from "./schemas/cart-schema";
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
@@ -54,5 +62,44 @@ export const cartItemsRelations = relations(cartItem, ({ one }) => ({
   variant: one(variants, {
     fields: [cartItem.variantId],
     references: [variants.id],
+  }),
+}));
+
+export const orderRelations = relations(order, ({ one, many }) => ({
+  user: one(user, {
+    fields: [order.userId],
+    references: [user.id],
+  }),
+  organization: one(organization, {
+    fields: [order.organizationId],
+    references: [organization.id],
+  }),
+  items: many(orderItem),
+  address: one(orderAddress, {
+    fields: [order.id],
+    references: [orderAddress.orderId],
+  }),
+}));
+
+export const orderItemRelations = relations(orderItem, ({ one }) => ({
+  order: one(order, {
+    fields: [orderItem.orderId],
+    references: [order.id],
+  }),
+  variant: one(variants, {
+    fields: [orderItem.variantId],
+    references: [variants.id],
+  }),
+}));
+export const addressRelations = relations(address, ({ one }) => ({
+  user: one(user, {
+    fields: [address.userId],
+    references: [user.id],
+  }),
+}));
+export const orderAddressRelations = relations(orderAddress, ({ one }) => ({
+  order: one(order, {
+    fields: [orderAddress.orderId],
+    references: [order.id],
   }),
 }));

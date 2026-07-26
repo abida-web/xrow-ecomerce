@@ -1,4 +1,11 @@
-import { numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  numeric,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { organization, user } from "./auth-schema";
 import { products, variants } from "./product-schema";
 
@@ -41,5 +48,34 @@ export const orderItem = pgTable("order_item", {
     .references(() => variants.id, { onDelete: "cascade" }),
   quantity: numeric("quantity"),
   priceAtPurchase: numeric("price_at_purchase"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+// Shared address fields
+const addressFields = {
+  fullName: text("full_name").notNull(),
+  phone: text("phone").notNull(), // Changed to text
+  email: text("email"),
+  country: text("country").default("US"),
+  province: text("province"),
+  city: text("city"),
+  streetAddress: text("street_address"),
+  postalCode: text("postal_code"),
+};
+
+export const address = pgTable("address", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+  ...addressFields,
+  isDefault: boolean("is_default").default(false),
+  addressType: text("address_type").default("shipping"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const orderAddress = pgTable("order_address", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orderId: uuid("order_id").references(() => order.id, { onDelete: "cascade" }),
+  ...addressFields,
+  // No isDefault needed for historical snapshot
   createdAt: timestamp("created_at").defaultNow(),
 });

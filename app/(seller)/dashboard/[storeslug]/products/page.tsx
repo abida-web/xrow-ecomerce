@@ -1,6 +1,7 @@
 "use client";
 
 import { getProducts, removeProduct } from "@/app/actions/product-actions";
+import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Edit3, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -25,10 +26,14 @@ const ProductsPage = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
+  const [debouncedQuery] = useDebouncedValue(searchTerm, {
+    wait: 500, // Wait 500ms after last change
+  });
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["products", storeslug, searchTerm, page],
-    queryFn: () => getProducts(storeslug, searchTerm, page, 10),
+    queryKey: ["products", storeslug, debouncedQuery, page],
+    queryFn: () => getProducts(storeslug, debouncedQuery, page, 10),
     enabled: !!storeslug,
+    placeholderData: (previousData) => previousData,
   });
 
   const router = useRouter();
@@ -45,7 +50,7 @@ const ProductsPage = () => {
     setPage((prev) => prev - 1);
   };
   const displayProducts = data?.productListData;
-  if (!data || !data.productListData) {
+  if (!data) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-400">

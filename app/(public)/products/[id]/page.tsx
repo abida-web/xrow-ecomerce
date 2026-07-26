@@ -3,7 +3,7 @@
 import { getProductDetail } from "@/app/actions/product-actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuantityStore } from "@/store/cart-store";
 
 interface ImageProps {
@@ -71,6 +71,10 @@ export default function ProductDetailPage() {
   const currentImage = selectedImage || primaryImage;
   const currentVariant = selectedVariant || product?.variants?.[0];
 
+  const existingItem = cartItems?.userCartItems?.find(
+    (item: any) => item.variantId === currentVariant?.id,
+  );
+
   const addtoCartMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch("/api/cart/items", {
@@ -82,7 +86,7 @@ export default function ProductDetailPage() {
         body: JSON.stringify({
           variantId: currentVariant?.id,
           productId: product?.id,
-          quantity: quantity,
+          quantity: Number(quantity),
         }),
       });
 
@@ -95,6 +99,8 @@ export default function ProductDetailPage() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
+      // Reset quantity to 1 after successful add
+      reset();
     },
   });
 
@@ -116,6 +122,8 @@ export default function ProductDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
+      // Reset quantity to 1 after successful update
+      reset();
     },
   });
 
@@ -124,10 +132,6 @@ export default function ProductDetailPage() {
     if (!currentVariant) return;
     if (quantity < 1 || quantity > currentVariant.stock) return;
 
-    const existingItem = cartItems?.userCartItems?.find(
-      (item: any) => item.variantId === currentVariant?.id,
-    );
-
     if (existingItem) {
       updateQuantityMutation.mutate();
     } else {
@@ -135,29 +139,10 @@ export default function ProductDetailPage() {
     }
   };
 
-  const existingItem = cartItems?.userCartItems?.find(
-    (item: any) => item.variantId === currentVariant?.id,
-  );
-
-  useEffect(() => {
-    if (existingItem) {
-      setQuantity(existingItem.quantity);
-    } else {
-      reset();
-    }
-  }, [existingItem, currentVariant?.id, setQuantity, reset]);
-
   const handleQuantityChange = (newQuantity: number) => {
     if (!currentVariant) return;
     if (newQuantity < 1 || newQuantity > currentVariant.stock) return;
     setQuantity(newQuantity);
-
-    if (existingItem) {
-      const timer = setTimeout(() => {
-        updateQuantityMutation.mutate();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
   };
 
   if (isLoading) {
