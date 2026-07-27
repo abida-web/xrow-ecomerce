@@ -12,7 +12,6 @@ import {
   cart,
   cartItem,
   order,
-  orderAddress,
   orderItem,
 } from "./schemas/cart-schema";
 
@@ -75,9 +74,9 @@ export const orderRelations = relations(order, ({ one, many }) => ({
     references: [organization.id],
   }),
   items: many(orderItem),
-  address: one(orderAddress, {
+  address: one(address, {
     fields: [order.id],
-    references: [orderAddress.orderId],
+    references: [address.orderId],
   }),
 }));
 
@@ -95,11 +94,5 @@ export const addressRelations = relations(address, ({ one }) => ({
   user: one(user, {
     fields: [address.userId],
     references: [user.id],
-  }),
-}));
-export const orderAddressRelations = relations(orderAddress, ({ one }) => ({
-  order: one(order, {
-    fields: [orderAddress.orderId],
-    references: [order.id],
   }),
 }));

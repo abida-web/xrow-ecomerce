@@ -103,7 +103,10 @@ const Navbar = () => {
               </div>
             )}
           </div>
-          <button className="hover:text-orange-500 transition-colors">
+          <button
+            onClick={() => router.push("./profile")}
+            className="hover:text-orange-500 transition-colors"
+          >
             <User size={20} />
           </button>
           <button
@@ -213,7 +216,11 @@ const Navbar = () => {
 
             {/* User */}
             <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-700">
-              <User size={20} className="text-gray-400" />
+              <User
+                onClick={() => router.push("./profile")}
+                size={20}
+                className="text-gray-400"
+              />
               <span className="text-gray-300">Profile</span>
             </div>
           </div>

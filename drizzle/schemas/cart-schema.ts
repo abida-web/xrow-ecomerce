@@ -64,18 +64,12 @@ const addressFields = {
 
 export const address = pgTable("address", {
   id: uuid("id").defaultRandom().primaryKey(),
+  orderId: uuid("order_id").references(() => order.id, { onDelete: "cascade" }),
+
   userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
   ...addressFields,
   isDefault: boolean("is_default").default(false),
   addressType: text("address_type").default("shipping"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const orderAddress = pgTable("order_address", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  orderId: uuid("order_id").references(() => order.id, { onDelete: "cascade" }),
-  ...addressFields,
-  // No isDefault needed for historical snapshot
-  createdAt: timestamp("created_at").defaultNow(),
 });

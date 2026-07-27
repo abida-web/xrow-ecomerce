@@ -4,12 +4,11 @@ import {
   cart,
   cartItem,
   order,
-  orderAddress,
   orderItem,
   variants,
 } from "@/drizzle/schema";
 import { auth } from "@/lib/auth";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 interface CartItemWithVariant {
@@ -83,6 +82,13 @@ export async function POST(req: Request) {
       );
     }
   }
+  const addressIsDeafult = await db.query.address.findFirst({
+    where: and(
+      eq(address.userId, session.user.id),
+      eq(address.isDefault, true),
+    ),
+  });
+  const shouldBeDefault = addressData.isDefault === true || !addressIsDeafult;
 
   const groupedOrders = new Map();
   for (const item of userCartItems) {
@@ -127,9 +133,19 @@ export async function POST(req: Request) {
         .set({ stock: sql`${variants.stock} - ${item.quantity}` })
         .where(eq(variants.id, item.variantId));
     }
+    let isDefault = shouldBeDefault;
+    if (isDefault && addressIsDeafult) {
+      // Set all existing default addresses to false
+      await db
+        .update(address)
+        .set({ isDefault: false })
+        .where(
+          and(eq(address.userId, session.user.id), eq(address.isDefault, true)),
+        );
+    }
 
-    // Create address for this order (once per order)
     await db.insert(address).values({
+      orderId: newOrder.id,
       userId: session.user.id,
       fullName: addressData.fullName,
       phone: addressData.phone,
@@ -139,19 +155,7 @@ export async function POST(req: Request) {
       city: addressData.city,
       streetAddress: addressData.streetAddress,
       postalCode: addressData.postalCode,
-      isDefault: addressData.isDefault,
-    });
-
-    await db.insert(orderAddress).values({
-      orderId: newOrder.id,
-      fullName: addressData.fullName,
-      phone: addressData.phone,
-      email: addressData.email,
-      country: addressData.country,
-      province: addressData.province,
-      city: addressData.city,
-      streetAddress: addressData.streetAddress,
-      postalCode: addressData.postalCode,
+      isDefault: isDefault,
     });
   }
 

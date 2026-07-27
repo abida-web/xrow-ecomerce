@@ -1,6 +1,7 @@
 "use client";
 
 import CustomInput from "@/app/(seller)/dashboard/_components/CustomeInput";
+import { getDefaultAddress } from "@/app/actions/getDefaultAddress";
 import { useQuantityStore } from "@/store/cart-store";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MinusCircle, PlusCircle, Trash2, X } from "lucide-react";
@@ -19,8 +20,27 @@ const CartPage = () => {
     isDefault: true,
   });
   const [openCheckoutModal, setOpenCheckoutModal] = useState(false);
+  const [loadDefault, setLoadDefault] = useState(false);
   const queryClient = useQueryClient();
-
+  const { data: defaultAddresses } = useQuery<any>({
+    queryKey: ["address"],
+    queryFn: async () => await getDefaultAddress(),
+  });
+  useEffect(() => {
+    if (loadDefault && defaultAddresses) {
+      setAddress({
+        fullName: defaultAddresses.fullName || "",
+        phone: defaultAddresses.phone || "",
+        email: defaultAddresses.email || "",
+        country: defaultAddresses.country || "US",
+        province: defaultAddresses.province || "",
+        city: defaultAddresses.city || "",
+        streetAddress: defaultAddresses.streetAddress || "",
+        postalCode: defaultAddresses.postalCode || "",
+        isDefault: true,
+      });
+    }
+  }, [loadDefault, defaultAddresses]);
   const {
     data: cartItems,
     isLoading,
@@ -299,20 +319,33 @@ const CartPage = () => {
                     <input
                       type="checkbox"
                       id="isDefault"
-                      checked={address.isDefault}
-                      onChange={(e) =>
-                        handleAddressChange(
-                          "isDefault",
-                          e.target.checked as any,
-                        )
-                      }
-                      className="w-4 h-4 accent-orange-500"
+                      checked={loadDefault}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setLoadDefault(checked);
+                        if (!checked) {
+                          setAddress({
+                            fullName: "",
+                            phone: "",
+                            email: "",
+                            country: "US",
+                            province: "",
+                            city: "",
+                            streetAddress: "",
+                            postalCode: "",
+                            isDefault: false,
+                          });
+                        }
+                      }}
+                      className="w-4 h-4 accent-orange-500 cursor-pointer"
                     />
                     <label
                       htmlFor="isDefault"
-                      className="text-sm text-gray-300"
+                      className="text-sm text-gray-300 cursor-pointer"
                     >
-                      Save this address as default
+                      {defaultAddresses
+                        ? "Use default address"
+                        : "Save as default address"}
                     </label>
                   </div>
                 </div>
