@@ -2,7 +2,6 @@
 
 import CustomInput from "@/app/(seller)/dashboard/_components/CustomeInput";
 import { getDefaultAddress } from "@/app/actions/getDefaultAddress";
-import { useQuantityStore } from "@/store/cart-store";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MinusCircle, PlusCircle, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -20,27 +19,30 @@ const CartPage = () => {
     isDefault: true,
   });
   const [openCheckoutModal, setOpenCheckoutModal] = useState(false);
-  const [loadDefault, setLoadDefault] = useState(false);
+  const [useDefaultAddress, setUseDefaultAddress] = useState(false);
   const queryClient = useQueryClient();
-  const { data: defaultAddresses } = useQuery<any>({
+
+  const { data: defaultAddress } = useQuery<any>({
     queryKey: ["address"],
     queryFn: async () => await getDefaultAddress(),
   });
+
   useEffect(() => {
-    if (loadDefault && defaultAddresses) {
+    if (useDefaultAddress && defaultAddress) {
       setAddress({
-        fullName: defaultAddresses.fullName || "",
-        phone: defaultAddresses.phone || "",
-        email: defaultAddresses.email || "",
-        country: defaultAddresses.country || "US",
-        province: defaultAddresses.province || "",
-        city: defaultAddresses.city || "",
-        streetAddress: defaultAddresses.streetAddress || "",
-        postalCode: defaultAddresses.postalCode || "",
+        fullName: defaultAddress.fullName || "",
+        phone: defaultAddress.phone || "",
+        email: defaultAddress.email || "",
+        country: defaultAddress.country || "US",
+        province: defaultAddress.province || "",
+        city: defaultAddress.city || "",
+        streetAddress: defaultAddress.streetAddress || "",
+        postalCode: defaultAddress.postalCode || "",
         isDefault: true,
       });
     }
-  }, [loadDefault, defaultAddresses]);
+  }, [useDefaultAddress, defaultAddress]);
+
   const {
     data: cartItems,
     isLoading,
@@ -93,7 +95,7 @@ const CartPage = () => {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || "Failed to update quantity");
+        throw new Error(error.error || "Failed to delete item");
       }
 
       return res.json();
@@ -113,12 +115,7 @@ const CartPage = () => {
     const stock = item.variant?.stock || 0;
     if (newQuantity < 1 || newQuantity > stock) return;
 
-    // Debounce the API call
-    const timer = setTimeout(() => {
-      updateQuantityMutation.mutate({ variantId, newQuantity });
-    }, 300);
-
-    return () => clearTimeout(timer);
+    updateQuantityMutation.mutate({ variantId, newQuantity });
   };
 
   const handleDeleteItem = (variantId: string) => {
@@ -135,7 +132,6 @@ const CartPage = () => {
 
   const createOrderMutation = useMutation({
     mutationFn: async () => {
-      // Include address in the order
       const res = await fetch(`/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -154,7 +150,6 @@ const CartPage = () => {
       refetch();
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       setOpenCheckoutModal(false);
-      // Reset address form
       setAddress({
         fullName: "",
         phone: "",
@@ -166,11 +161,11 @@ const CartPage = () => {
         postalCode: "",
         isDefault: true,
       });
+      setUseDefaultAddress(false);
     },
   });
 
   const handlePlaceOrder = () => {
-    // Validate required fields
     if (
       !address.fullName ||
       !address.phone ||
@@ -183,13 +178,16 @@ const CartPage = () => {
     createOrderMutation.mutate();
   };
 
-  // Handle input change with proper typing
   const handleAddressChange = (field: string, value: string) => {
     setAddress((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
+
+  if (isLoading) {
+    return <div className="text-center py-10">Loading cart...</div>;
+  }
 
   return (
     <div>
@@ -198,7 +196,6 @@ const CartPage = () => {
       </h1>
       <div className="grid lg:grid-cols-[800px_1fr] gap-5">
         {openCheckoutModal ? (
-          // ✅ Checkout Modal with Complete Address Fields
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
@@ -213,7 +210,6 @@ const CartPage = () => {
 
               <div className="mt-5">
                 <div className="bg-white/5 rounded-lg p-5">
-                  {/* ✅ Full Name */}
                   <div className="mb-4">
                     <CustomInput
                       label="Full Name *"
@@ -227,7 +223,6 @@ const CartPage = () => {
                     />
                   </div>
 
-                  {/* ✅ Phone & Email */}
                   <div className="grid gap-5 md:grid-cols-2 mb-4">
                     <CustomInput
                       label="Phone *"
@@ -252,7 +247,6 @@ const CartPage = () => {
                     />
                   </div>
 
-                  {/* ✅ Country & Province */}
                   <div className="grid gap-5 md:grid-cols-2 mb-4">
                     <CustomInput
                       label="Country *"
@@ -276,7 +270,6 @@ const CartPage = () => {
                     />
                   </div>
 
-                  {/* ✅ City & Postal Code */}
                   <div className="grid gap-5 md:grid-cols-2 mb-4">
                     <CustomInput
                       label="City *"
@@ -300,7 +293,6 @@ const CartPage = () => {
                     />
                   </div>
 
-                  {/* ✅ Street Address */}
                   <div className="mb-4">
                     <CustomInput
                       label="Street Address *"
@@ -314,15 +306,14 @@ const CartPage = () => {
                     />
                   </div>
 
-                  {/* ✅ Is Default Address */}
                   <div className="flex items-center gap-3 mt-4">
                     <input
                       type="checkbox"
                       id="isDefault"
-                      checked={loadDefault}
+                      checked={useDefaultAddress}
                       onChange={(e) => {
                         const checked = e.target.checked;
-                        setLoadDefault(checked);
+                        setUseDefaultAddress(checked);
                         if (!checked) {
                           setAddress({
                             fullName: "",
@@ -343,7 +334,7 @@ const CartPage = () => {
                       htmlFor="isDefault"
                       className="text-sm text-gray-300 cursor-pointer"
                     >
-                      {defaultAddresses
+                      {defaultAddress
                         ? "Use default address"
                         : "Save as default address"}
                     </label>
@@ -363,92 +354,102 @@ const CartPage = () => {
             </div>
           </div>
         ) : (
-          // ✅ Cart Items View
           <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-5">
-              {cartItems?.userCartItems?.map((item: any) => {
-                const subTotal = item.variant.price * item.quantity;
-                return (
-                  <div key={item.id} className="flex items-center">
-                    <div className="grid grid-cols-4 items-center gap-5 flex-1 bg-gray-900 p-3 rounded-lg">
-                      <img
-                        src={item.variant?.product?.images?.[0]?.url}
-                        className="w-[80px] h-[100px] object-cover rounded-lg"
-                        alt={item.variant?.product?.name}
-                      />
-                      <div className="flex flex-col gap-1">
-                        <p className="font-medium">
-                          {item.variant?.product?.name}
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          #{item.variantId.slice(0, 10)}
-                        </p>
-                        {item.variant?.option1 && (
-                          <p className="text-xs text-gray-400">
-                            {item.variant.option1}: {item.variant.option1Value}
+            {cartItems?.userCartItems?.length === 0 ? (
+              <div className="text-center py-10 text-gray-400">
+                Your cart is empty
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col gap-5">
+                  {cartItems?.userCartItems?.map((item: any) => {
+                    const subTotal = item.variant.price * item.quantity;
+                    return (
+                      <div key={item.id} className="flex items-center">
+                        <div className="grid grid-cols-4 items-center gap-5 flex-1 bg-gray-900 p-3 rounded-lg">
+                          <img
+                            src={item.variant?.product?.images?.[0]?.url}
+                            className="w-[80px] h-[100px] object-cover rounded-lg"
+                            alt={item.variant?.product?.name}
+                          />
+                          <div className="flex flex-col gap-1">
+                            <p className="font-medium">
+                              {item.variant?.product?.name}
+                            </p>
+                            <p className="text-gray-400 text-xs">
+                              #{item.variantId.slice(0, 10)}
+                            </p>
+                            {item.variant?.option1 && (
+                              <p className="text-xs text-gray-400">
+                                {item.variant.option1}:{" "}
+                                {item.variant.option1Value}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex gap-5 items-center">
+                            <p className="bg-white/10 py-1 text-xs px-1.5 rounded-full">
+                              {item.quantity}
+                            </p>
+                            <div className="flex flex-col gap-2">
+                              <button
+                                onClick={() =>
+                                  handleUpdateQuantity(
+                                    item.variantId,
+                                    Number(item.quantity) + 1,
+                                  )
+                                }
+                                disabled={updateQuantityMutation.isPending}
+                                className="hover:opacity-70 transition-opacity"
+                              >
+                                <PlusCircle
+                                  fill="oklch(70.5% 0.213 47.604)"
+                                  size={20}
+                                />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleUpdateQuantity(
+                                    item.variantId,
+                                    item.quantity - 1,
+                                  )
+                                }
+                                disabled={updateQuantityMutation.isPending}
+                                className="hover:opacity-70 transition-opacity"
+                              >
+                                <MinusCircle
+                                  fill="oklch(70.5% 0.213 47.604)"
+                                  size={20}
+                                />
+                              </button>
+                            </div>
+                          </div>
+                          <p>
+                            <span className="text-orange-500">afg</span>
+                            {subTotal.toFixed(2)}
                           </p>
-                        )}
-                      </div>
-                      <div className="flex gap-5 items-center">
-                        <p className="bg-white/10 py-1 text-xs px-1.5 rounded-full">
-                          {item.quantity}
-                        </p>
-                        <div className="flex flex-col gap-2">
-                          <button
-                            onClick={() =>
-                              handleUpdateQuantity(
-                                item.variantId,
-                                Number(item.quantity) + 1,
-                              )
-                            }
-                            className="hover:opacity-70 transition-opacity"
-                          >
-                            <PlusCircle
-                              fill="oklch(70.5% 0.213 47.604)"
-                              size={20}
-                            />
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleUpdateQuantity(
-                                item.variantId,
-                                item.quantity - 1,
-                              )
-                            }
-                            className="hover:opacity-70 transition-opacity"
-                          >
-                            <MinusCircle
-                              fill="oklch(70.5% 0.213 47.604)"
-                              size={20}
-                            />
-                          </button>
                         </div>
+                        <button
+                          onClick={() => handleDeleteItem(item.variantId)}
+                          disabled={deleteItemMutation.isPending}
+                          className="ml-5 hover:text-red-500 hover:bg-red-600/20 p-2 transition-colors rounded-full"
+                        >
+                          <Trash2 size={20} />
+                        </button>
                       </div>
-                      <p>
-                        <span className="text-orange-500">afg</span>
-                        {subTotal.toFixed(2)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteItem(item.variantId)}
-                      className="ml-5 hover:text-red-500 hover:bg-red-600/20 p-2 transition-colors rounded-full"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex items-center gap-10">
-              <span className="text-gray-400">Subtotal:</span>
-              <span className="text-orange-500 font-semibold">
-                afg{subTotal.toFixed(2)}
-              </span>
-            </div>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-10">
+                  <span className="text-gray-400">Subtotal:</span>
+                  <span className="text-orange-500 font-semibold">
+                    afg{subTotal.toFixed(2)}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         )}
 
-        {/* ✅ Order Summary */}
         <div className="w-full bg-gray-900 p-5 h-fit rounded-lg sticky top-5">
           <h1 className="pb-4 border-b border-gray-500 font-semibold">
             Order Summary
@@ -491,7 +492,9 @@ const CartPage = () => {
                 ? handlePlaceOrder
                 : () => setOpenCheckoutModal(true)
             }
-            disabled={!cartItems?.userCartItems?.length}
+            disabled={
+              !cartItems?.userCartItems?.length || createOrderMutation.isPending
+            }
             className="bg-orange-500 w-full hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-lg transition-colors"
           >
             {openCheckoutModal

@@ -7,6 +7,7 @@ import {
   UsersRound,
   Menu,
   X,
+  Truck,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -36,6 +37,12 @@ const navigations = [
     name: "Customers",
     href: "customers",
     icon: <UsersRound size={17} />,
+  },
+  {
+    id: 4,
+    name: "Drivers",
+    href: "drivers",
+    icon: <Truck size={17} />,
   },
   {
     id: 5,
@@ -94,7 +101,7 @@ const Sidbar = ({ storeSlug }: { storeSlug: string }) => {
             return (
               <Link
                 href={href}
-                key={nav.id}
+                key={nav.name}
                 onClick={closeSidebar}
                 className={`flex gap-2 items-center px-4 py-1.5 rounded-lg transition-colors ${
                   isActive

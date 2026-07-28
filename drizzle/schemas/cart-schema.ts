@@ -36,6 +36,14 @@ export const order = pgTable("order", {
   status: text("status"),
   subtotal: numeric("subtotal"),
   total: numeric("total"),
+  shippingFullName: text("shipping_full_name"),
+  shippingPhone: text("shipping_phone"),
+  shippingEmail: text("shipping_email"),
+  shippingCountry: text("shipping_country"),
+  shippingProvince: text("shipping_province"),
+  shippingCity: text("shipping_city"),
+  shippingStreetAddress: text("shipping_street_address"),
+  shippingPostalCode: text("shipping_postal_code"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 export const orderItem = pgTable("order_item", {

@@ -114,7 +114,15 @@ export async function POST(req: Request) {
         organizationId: orgId,
         status: "pending",
         subtotal: orgSubtotal.toString(),
-        total: orgSubtotal.toString(), // Add shipping/tax per org if needed
+        total: orgSubtotal.toString(),
+        shippingFullName: addressData.fullName,
+        shippingPhone: addressData.phone,
+        shippingEmail: addressData.email,
+        shippingCountry: addressData.country,
+        shippingProvince: addressData.province,
+        shippingCity: addressData.city,
+        shippingStreetAddress: addressData.streetAddress,
+        shippingPostalCode: addressData.postalCode,
       })
       .returning();
 
@@ -144,19 +152,23 @@ export async function POST(req: Request) {
         );
     }
 
-    await db.insert(address).values({
-      orderId: newOrder.id,
-      userId: session.user.id,
-      fullName: addressData.fullName,
-      phone: addressData.phone,
-      email: addressData.email,
-      country: addressData.country,
-      province: addressData.province,
-      city: addressData.city,
-      streetAddress: addressData.streetAddress,
-      postalCode: addressData.postalCode,
-      isDefault: isDefault,
-    });
+    if (addressData.isDefault === false) {
+      if (!addressData.isDefault) {
+        await db.insert(address).values({
+          orderId: newOrder.id,
+          userId: session.user.id,
+          fullName: addressData.fullName,
+          phone: addressData.phone,
+          email: addressData.email,
+          country: addressData.country,
+          province: addressData.province,
+          city: addressData.city,
+          streetAddress: addressData.streetAddress,
+          postalCode: addressData.postalCode,
+          isDefault: isDefault,
+        });
+      }
+    }
   }
 
   // Clear cart after all orders are created

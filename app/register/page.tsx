@@ -22,12 +22,10 @@ const CreateStoreSchema = z.object({
 type CreateStoreForm = z.infer<typeof CreateStoreSchema>;
 
 const CreateStorePage = () => {
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   const { data: session, isPending } = authClient.useSession();
-  const hasOrganization = !!session?.session?.activeOrganizationId;
 
   const {
     register,
@@ -67,41 +65,13 @@ const CreateStorePage = () => {
       console.error("Error creating store:", error);
     }
   }
-
-  useEffect(() => {
-    const fetchOrganizations = async () => {
-      if (!hasOrganization) {
-        setOrganizations([]);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await authClient.organization.list();
-        if (error) {
-          console.error("Error fetching organizations:", error);
-          return;
-        }
-        setOrganizations(data || []);
-      } catch (error) {
-        console.error("Failed to fetch organization:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchOrganizations();
-  }, [hasOrganization]);
-
-  // Handle loading state
-  if (isPending || isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-      </div>
-    );
+  const { data: organizaions, error } = authClient.useListOrganizations();
+  const hasOrganization = !!session?.session?.activeOrganizationId;
+  if (organizaions === null || organizaions.length === 0) return null;
+  function setActiveOrganization(orgId: string, slug: string) {
+    authClient.organization.setActive({ organizationId: orgId });
+    router.push(`/dashboard/${slug}`);
   }
-
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-2xl">
@@ -121,11 +91,11 @@ const CreateStorePage = () => {
           onSubmit={handleSubmit(handleCreateStore)}
           className="space-y-6 bg-white p-8 rounded-xl shadow-sm border border-gray-200"
         >
-          {hasOrganization && organizations.length > 0 && (
+          {hasOrganization && organizaions.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-gray-700">Your Stores</h3>
               <div className="space-y-3">
-                {organizations.map((org) => (
+                {organizaions.map((org) => (
                   <div
                     key={org.id}
                     className="border-2 border-gray-200 hover:border-orange-500 rounded-lg p-4 flex items-center justify-between transition-colors"
@@ -135,7 +105,7 @@ const CreateStorePage = () => {
                     </span>
                     <button
                       type="button" // Important: prevents form submission
-                      onClick={() => router.push(`/dashboard/${org.slug}`)}
+                      onClick={() => setActiveOrganization(org.id, org.slug)}
                       className="bg-orange-500 text-white px-4 py-1.5 flex items-center gap-2 rounded-md hover:bg-orange-600 transition-colors text-sm"
                     >
                       Go to dashboard

@@ -104,7 +104,7 @@ const Navbar = () => {
             )}
           </div>
           <button
-            onClick={() => router.push("./profile")}
+            onClick={() => router.push("./account")}
             className="hover:text-orange-500 transition-colors"
           >
             <User size={20} />
@@ -217,7 +217,7 @@ const Navbar = () => {
             {/* User */}
             <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-700">
               <User
-                onClick={() => router.push("./profile")}
+                onClick={() => router.push("./account")}
                 size={20}
                 className="text-gray-400"
               />
