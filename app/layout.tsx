@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Roboto } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "react-hot-toast";
 
 // Inter is the most widely used font in modern e-commerce
 const inter = Inter({
@@ -32,7 +33,10 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${roboto.variable} bg-black h-full antialiased`}
     >
-      <body className="bg-black flex flex-col font-sans">{children}</body>
+      <body className="bg-black flex flex-col font-sans">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

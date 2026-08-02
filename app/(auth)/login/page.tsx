@@ -1,11 +1,12 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@/lib/auth-client";
 import { UsersRound, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 const LoginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -18,6 +19,13 @@ const Login = () => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
+  const params = useSearchParams();
+  const redirectParam = params.get("redirect");
+
+  const getCleanRedirectPath = () => {
+    if (!redirectParam) return "/";
+    return redirectParam.startsWith("/") ? redirectParam : `/${redirectParam}`;
+  };
   const {
     register,
     handleSubmit,
@@ -31,15 +39,17 @@ const Login = () => {
   });
 
   async function handleLogIn(data: SignInForm) {
+    const targetPath = getCleanRedirectPath();
     try {
       await authClient.signIn.email(
-        { ...data, callbackURL: "/" },
+        { ...data, callbackURL: targetPath },
         {
           onError: (error) => {
-            console.log(error);
+            toast.error("An error occurred");
           },
           onSuccess: () => {
-            router.push("/"); // ← FIXED: Removed parentheses
+            toast.success("Loged in successfully");
+            router.push(targetPath);
             router.refresh();
           },
         },

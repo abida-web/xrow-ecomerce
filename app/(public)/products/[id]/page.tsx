@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useQuantityStore } from "@/store/cart-store";
+import toast from "react-hot-toast";
 
 interface ImageProps {
   id: string;
@@ -92,12 +93,13 @@ export default function ProductDetailPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to add to cart");
+        toast.error("Failed to to add to cart ");
       }
 
       return response.json();
     },
     onSuccess: (data) => {
+      toast.error("Product added to cart ");
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       // Reset quantity to 1 after successful add
       reset();
@@ -115,12 +117,13 @@ export default function ProductDetailPage() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || "Failed to update quantity");
+        toast.error("Failed to update quantity");
       }
 
       return res.json();
     },
     onSuccess: () => {
+      "Update quantity successfully";
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       // Reset quantity to 1 after successful update
       reset();

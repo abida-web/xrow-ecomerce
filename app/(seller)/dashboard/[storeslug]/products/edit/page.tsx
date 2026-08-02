@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import ProductForm from "../../../_components/ProductForm";
 import { useProduct } from "@/store/product-store";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 const EditPage = () => {
   const params = useParams();
@@ -35,6 +36,7 @@ const EditPage = () => {
         body: JSON.stringify({ productForm, storeslug }),
       });
       if (res.ok) {
+        toast.success("Product edited successfully");
         setIsSubmitting(false);
       }
     } catch (error) {

@@ -1,11 +1,12 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@/lib/auth-client";
 import { UsersRound, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 const SignupSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -16,6 +17,14 @@ const SignupSchema = z.object({
 type SignUpForm = z.infer<typeof SignupSchema>;
 
 const Signup = () => {
+  const params = useSearchParams();
+  const redirectParam = params.get("redirect");
+
+  const getCleanRedirectPath = () => {
+    if (!redirectParam) return "/";
+    return redirectParam.startsWith("/") ? redirectParam : `/${redirectParam}`;
+  };
+
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -33,15 +42,17 @@ const Signup = () => {
   });
 
   async function handleSignUp(data: SignUpForm) {
+    const targetDestination = getCleanRedirectPath();
     try {
       await authClient.signUp.email(
-        { ...data, callbackURL: "/" },
+        { ...data, callbackURL: targetDestination },
         {
           onError: (error) => {
-            console.log(error);
+            toast.error("An error occured");
           },
           onSuccess: () => {
-            router.push("/"); // ← FIXED: Removed parentheses
+            toast.success("Signed up successfully");
+            router.push(targetDestination);
             router.refresh();
           },
         },

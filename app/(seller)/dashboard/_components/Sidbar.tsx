@@ -8,6 +8,7 @@ import {
   Menu,
   X,
   Truck,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -40,9 +41,9 @@ const navigations = [
   },
   {
     id: 4,
-    name: "Drivers",
-    href: "drivers",
-    icon: <Truck size={17} />,
+    name: "Staff",
+    href: "staff",
+    icon: <Users size={17} />,
   },
   {
     id: 5,

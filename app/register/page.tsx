@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Store, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import toast from "react-hot-toast";
 
 // Define proper types
 interface Organization {
@@ -22,7 +23,6 @@ const CreateStoreSchema = z.object({
 type CreateStoreForm = z.infer<typeof CreateStoreSchema>;
 
 const CreateStorePage = () => {
-  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   const { data: session, isPending } = authClient.useSession();
@@ -55,23 +55,32 @@ const CreateStorePage = () => {
           onSuccess: () => {
             router.push(`/dashboard/${slug}`);
           },
-          onError: (error) => {
-            console.error("Failed to create store:", error);
-            // Optionally show error to user
+          onError: (error: any) => {
+            toast.error("Failed to create store", error);
           },
         },
       );
-    } catch (error) {
-      console.error("Error creating store:", error);
+    } catch (error: any) {
+      toast.error("Error creating store", error);
     }
   }
   const { data: organizaions, error } = authClient.useListOrganizations();
   const hasOrganization = !!session?.session?.activeOrganizationId;
-  if (organizaions === null || organizaions.length === 0) return null;
+
+  // Fix: Check if organizations is null or empty, show loading/empty state
+  if (isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-8">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
   function setActiveOrganization(orgId: string, slug: string) {
     authClient.organization.setActive({ organizationId: orgId });
     router.push(`/dashboard/${slug}`);
   }
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-2xl">
@@ -81,7 +90,7 @@ const CreateStorePage = () => {
           </span>
           <h1 className="text-3xl font-bold mt-4">Create Your Store</h1>
           <p className="text-sm text-gray-500 mt-2">
-            {hasOrganization
+            {hasOrganization && organizaions && organizaions.length > 0
               ? "Manage your existing stores or create a new one"
               : "Set up your online store to start selling"}
           </p>
@@ -91,7 +100,7 @@ const CreateStorePage = () => {
           onSubmit={handleSubmit(handleCreateStore)}
           className="space-y-6 bg-white p-8 rounded-xl shadow-sm border border-gray-200"
         >
-          {hasOrganization && organizaions.length > 0 && (
+          {hasOrganization && organizaions && organizaions.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-gray-700">Your Stores</h3>
               <div className="space-y-3">

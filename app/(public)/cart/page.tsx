@@ -5,6 +5,7 @@ import { getDefaultAddress } from "@/app/actions/getDefaultAddress";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MinusCircle, PlusCircle, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 const CartPage = () => {
   const [address, setAddress] = useState({
@@ -75,12 +76,13 @@ const CartPage = () => {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || "Failed to update quantity");
+        toast.error("Failed to update the quantity");
       }
 
       return res.json();
     },
     onSuccess: () => {
+      toast.success("Quantity updated");
       refetch();
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
@@ -94,13 +96,13 @@ const CartPage = () => {
       });
 
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to delete item");
+        toast.error("Failed to delete item");
       }
 
       return res.json();
     },
     onSuccess: () => {
+      toast.success("Item removed successfully");
       refetch();
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
@@ -140,13 +142,13 @@ const CartPage = () => {
       });
 
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to place Order");
+        toast.error("Failed to place Order");
       }
 
       return res.json();
     },
     onSuccess: () => {
+      toast.success("Order placed successfully");
       refetch();
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       setOpenCheckoutModal(false);
@@ -172,7 +174,7 @@ const CartPage = () => {
       !address.streetAddress ||
       !address.city
     ) {
-      alert("Please fill in all required address fields");
+      toast.error("Please fill in all required address fields");
       return;
     }
     createOrderMutation.mutate();

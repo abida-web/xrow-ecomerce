@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Edit3, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 type Product = {
   id: string;
@@ -40,6 +41,7 @@ const ProductsPage = () => {
   const deleteProduct = async (productId: string) => {
     const res = await removeProduct({ storeslug, productId });
     if (res.success) {
+      toast.success("Deleted the product");
       refetch();
     }
   };

@@ -6,6 +6,7 @@ import CustomInput from "../../../_components/CustomeInput";
 import { useParams } from "next/navigation";
 import { useProduct } from "@/store/product-store";
 import ProductForm from "../../../_components/ProductForm";
+import toast from "react-hot-toast";
 
 const NewProduct = () => {
   const params = useParams();
@@ -37,7 +38,7 @@ const NewProduct = () => {
       });
 
       if (res.ok) {
-        console.log("Product submitted successfully");
+        toast.success("Product submitted successfully");
         setProductForm({
           organizationId: "",
           categoryId: "",
@@ -64,13 +65,11 @@ const NewProduct = () => {
           option3Value: "",
         });
       } else {
-        const errorData = await res.json().catch(() => ({}));
-        console.error("Submission failed:", res.status, errorData);
+        toast.error("Product submission failed");
         // You might want to set an error state here
       }
-    } catch (error) {
-      // Handle network errors or other exceptions
-      console.error("Error submitting product:", error);
+    } catch (error: any) {
+      toast.error(error?.message);
       // Set error state to show user feedback
     } finally {
       setIsSubmitting(false);

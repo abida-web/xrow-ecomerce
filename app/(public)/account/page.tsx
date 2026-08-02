@@ -12,6 +12,7 @@ import {
   Fingerprint,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 
 // Types
 interface OrderItem {
@@ -79,6 +80,7 @@ const AccountPage = () => {
     await authClient.updateUser({
       name: name,
     });
+    toast.success("Name updated successfully");
     setEditingField(null);
     refetch();
   };
@@ -87,6 +89,7 @@ const AccountPage = () => {
     await authClient.changeEmail({
       newEmail: email,
     });
+    toast.success("Email updated successfully");
     setEditingField(null);
     refetch();
   };
@@ -97,6 +100,7 @@ const AccountPage = () => {
       currentPassword: passWords.currentPassword,
       revokeOtherSessions: true,
     });
+    toast.success("Password change successfully");
     setPassWords({
       currentPassword: "",
       newPassWord: "",

@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import React, { useState } from "react";
 import CustomInput from "../../../_components/CustomeInput";
 import { useProduct } from "@/store/product-store";
+import toast from "react-hot-toast";
 
 interface Variant {
   id: string;

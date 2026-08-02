@@ -5,6 +5,8 @@ import * as schema from "@/drizzle/schema";
 import { organization } from "better-auth/plugins/organization";
 import { sendEmailVerificationEmail } from "./emails/email-verification";
 import { sendPasswordReset } from "./emails/sendPassword-reset";
+import { sendOrganizationInviteEmail } from "./emails/organization-invite-email";
+import { owner, ac, admin, member, driver, staff } from "./permission";
 export const auth = betterAuth({
   appName: "Xrow",
 
@@ -43,10 +45,41 @@ export const auth = betterAuth({
     },
   },
 
-  plugins: [organization()],
+  plugins: [
+    organization({
+      ac,
+      roles: {
+        owner,
+        admin,
+        member,
+        driver,
+        staff,
+      },
+      allowUserToCreateOrganization: true,
+      dynamicAccessControl: {
+        enabled: true,
+      },
+
+      sendInvitationEmail: async ({
+        email,
+        organization,
+        inviter,
+        invitation,
+      }) => {
+        await sendOrganizationInviteEmail({
+          invitation,
+          inviter: inviter.user,
+          organization,
+          email,
+        });
+      },
+    }),
+  ],
 
   database: drizzleAdapter(db, {
     provider: "pg",
-    schema: schema,
+    schema: {
+      ...schema,
+    },
   }),
 });

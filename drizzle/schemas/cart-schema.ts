@@ -30,6 +30,7 @@ export const cartItem = pgTable("cart_item", {
 export const order = pgTable("order", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+  driverId: text("driver_id").references(() => user.id),
   organizationId: text("organization_id")
     .notNull()
     .references(() => organization.id, { onDelete: "cascade" }),
