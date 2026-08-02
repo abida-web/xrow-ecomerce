@@ -161,7 +161,8 @@ export const userRelations = relations(user, ({ many }) => ({
   accounts: many(account),
   members: many(member),
   invitations: many(invitation),
-  orders: many(order),
+  orders: many(order, { relationName: "userOrders" }), // Added relationName
+  driverOrders: many(order, { relationName: "driverOrders" }), // New relation for driver
   addresses: many(address),
 }));
 

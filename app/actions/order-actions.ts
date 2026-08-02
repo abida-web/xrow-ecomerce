@@ -46,7 +46,7 @@ export const driverDeliveries = async (storeslug: string, driverId: string) => {
     throw new Error("store data not found");
   }
   if (!memberData) {
-    return "Members data not found";
+    return [];
   }
   const deliveriesList = await db.query.order.findMany({
     where: and(
