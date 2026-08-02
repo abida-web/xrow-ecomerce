@@ -1,9 +1,14 @@
+// app/api/cart/items/[variantId]/route.ts
+
 import { db } from "@/drizzle/db";
 import { cart, cartItem } from "@/drizzle/schema";
 import { auth } from "@/lib/auth";
 import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+
+// Force dynamic rendering to prevent build issues
+export const dynamic = "force-dynamic";
 
 export async function PATCH(
   req: Request,
@@ -85,6 +90,7 @@ export async function PATCH(
     );
   }
 }
+
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ variantId: string }> },
@@ -111,21 +117,32 @@ export async function DELETE(
     }
 
     const cartId = userCart[0].id;
-    const deleteItem = await db
+
+    // Delete the cart item
+    const deletedItem = await db
       .delete(cartItem)
       .where(
         and(eq(cartItem.cartId, cartId), eq(cartItem.variantId, variantId)),
       )
       .returning();
+
+    if (!deletedItem.length) {
+      return NextResponse.json(
+        { error: "Cart item not found" },
+        { status: 404 },
+      );
+    }
+
     return NextResponse.json(
       {
         success: true,
-        message: "Cart item successfully",
+        message: "Cart item removed successfully",
+        deletedItem: deletedItem[0],
       },
       { status: 200 },
     );
   } catch (error) {
-    console.error("Error updating cart item:", error);
+    console.error("Error deleting cart item:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

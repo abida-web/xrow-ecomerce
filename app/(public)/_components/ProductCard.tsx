@@ -20,7 +20,7 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   // Safely get values with fallbacks
-  const imageUrl = product.images || "/placeholder-image.jpg";
+  const imageUrl = product.images;
   const price = Number(product.price || 0);
   const orgName = product.organizationName || "Unknown";
   const orgLogo = product.organizationLogo;
@@ -32,7 +32,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <img
             src={imageUrl}
             alt={product.name || "Product"}
-            className="w-full h-0 object-cover"
+            className="w-full h-70 object-cover"
             onError={(e) => {
               (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
             }}
