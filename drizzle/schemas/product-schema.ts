@@ -14,6 +14,7 @@ import { organization } from "./auth-schema";
 const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
+  icon: text("icon"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

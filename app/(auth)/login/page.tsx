@@ -1,7 +1,5 @@
-// app/(auth)/login/page.tsx
-
-import LoginContent from "@/app/(public)/_components/LoginContent";
 import { Suspense } from "react";
+import LoginContent from "../_components/LoginContent";
 
 export const dynamic = "force-dynamic";
 
