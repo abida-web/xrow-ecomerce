@@ -8,21 +8,16 @@ import {
   products,
   user,
   variants,
-} from "./schema";
-import {
-  address,
-  cart,
+  productOptions,
+  productOptionValues,
   cartItem,
-  order,
+  cart,
   orderItem,
-} from "./schemas/cart-schema";
-import {
-  member,
-  invitation,
-  organizationRole,
-  session,
-  account,
-} from "./schemas/auth-schema";
+  order,
+  address,
+  variantImages,
+  variantOptionValues,
+} from "./schema";
 
 // ============ CATEGORY RELATIONS ============
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -41,15 +36,67 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   }),
   variants: many(variants),
   images: many(productImages),
+  options: many(productOptions),
 }));
 
+// ============ PRODUCT OPTIONS RELATIONS ============
+export const productOptionsRelations = relations(
+  productOptions,
+  ({ one, many }) => ({
+    product: one(products, {
+      fields: [productOptions.productId],
+      references: [products.id],
+    }),
+    values: many(productOptionValues),
+  }),
+);
+
+// ============ PRODUCT OPTION VALUES RELATIONS ============
+export const productOptionValuesRelations = relations(
+  productOptionValues,
+  ({ one, many }) => ({
+    productOption: one(productOptions, {
+      fields: [productOptionValues.productOptionId],
+      references: [productOptions.id],
+    }),
+    variants: many(variantOptionValues),
+  }),
+);
+
 // ============ VARIANT RELATIONS ============
-export const variantsRelations = relations(variants, ({ one }) => ({
+export const variantsRelations = relations(variants, ({ one, many }) => ({
   product: one(products, {
     fields: [variants.productId],
     references: [products.id],
   }),
+  images: many(variantImages),
+  optionValues: many(variantOptionValues),
+  cartItems: many(cartItem),
+  orderItems: many(orderItem),
 }));
+
+// ============ VARIANT IMAGES RELATIONS ============
+export const variantImagesRelations = relations(variantImages, ({ one }) => ({
+  variant: one(variants, {
+    fields: [variantImages.variantId],
+    references: [variants.id],
+  }),
+}));
+
+// ============ VARIANT OPTION VALUES RELATIONS ============
+export const variantOptionValuesRelations = relations(
+  variantOptionValues,
+  ({ one }) => ({
+    variant: one(variants, {
+      fields: [variantOptionValues.variantId],
+      references: [variants.id],
+    }),
+    productOptionValue: one(productOptionValues, {
+      fields: [variantOptionValues.productOptionValueId],
+      references: [productOptionValues.id],
+    }),
+  }),
+);
 
 // ============ PRODUCT IMAGE RELATIONS ============
 export const productImagesRelations = relations(productImages, ({ one }) => ({
@@ -126,3 +173,20 @@ export const addressRelations = relations(address, ({ one }) => ({
     references: [order.id],
   }),
 }));
+
+// Export all relations
+export const allRelations = {
+  categoriesRelations,
+  productsRelations,
+  productOptionsRelations,
+  productOptionValuesRelations,
+  variantsRelations,
+  variantImagesRelations,
+  variantOptionValuesRelations,
+  productImagesRelations,
+  cartsRelations,
+  cartItemsRelations,
+  orderRelations,
+  orderItemRelations,
+  addressRelations,
+};

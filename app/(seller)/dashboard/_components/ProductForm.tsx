@@ -5,6 +5,7 @@ import {
   ImagePlus,
   LayersPlus,
   PackagePlus,
+  Plus,
   X,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
@@ -36,6 +37,11 @@ const ProductForm = ({
     setCurrentVariant,
     removeImage,
     fetchCategories,
+    currentProductOption,
+    setCurrentProductOption,
+    handleAddProductOption,
+    handleRemoveProductOption,
+    handleRemoveValueField,
   } = useProduct();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,21 +49,40 @@ const ProductForm = ({
   // Initialize form with intialData when editing
   useEffect(() => {
     if (intialData && type === "edit") {
+      const options =
+        intialData.options?.map((opt: any) => ({
+          ...opt,
+          // Ensure value is always an array
+          value: Array.isArray(opt.value)
+            ? opt.value
+            : Array.isArray(opt.values)
+              ? opt.values.map((v: any) =>
+                  typeof v === "string" ? v : v.value,
+                )
+              : [],
+        })) || [];
       setProductForm({
         name: intialData.name || "",
         description: intialData.description || "",
         categoryId: intialData.categoryId || "",
         status: intialData.status || "draft",
-        comparePriceAt: intialData.comparePriceAt || "",
-        costPrice: intialData.costPrice || "",
+        featured: intialData.featured || false,
         brand: intialData.brand || "",
-        weight: intialData.weight || "",
-        weightUnit: intialData.weightUnit || "g",
+
         images: intialData.images || [],
-        variants: intialData.variants || [],
+        options: options || [],
+        variants:
+          intialData.variants?.map((variant: any) => ({
+            id: variant.id,
+            sku: variant.sku || "",
+            price: variant.price || "",
+            stock: variant.stock || "",
+            comparePriceAt: variant.comparePriceAt || "",
+            costPrice: variant.costPrice || "",
+          })) || [],
       });
     }
-  }, [intialData, type, setProductForm, setCurrentVariant]);
+  }, [intialData, type, setProductForm]);
 
   // Reset form when switching to add mode
   useEffect(() => {
@@ -67,16 +92,14 @@ const ProductForm = ({
         description: "",
         categoryId: "",
         status: "draft",
-        comparePriceAt: "",
-        costPrice: "",
+        featured: false,
         brand: "",
-        weight: "",
-        weightUnit: "g",
+        options: [],
         images: [],
         variants: [],
       });
     }
-  }, [type, setProductForm, setCurrentVariant]);
+  }, [type, setProductForm]);
 
   useEffect(() => {
     fetchCategories();
@@ -174,37 +197,6 @@ const ProductForm = ({
               </option>
             </select>
 
-            <div className="flex sm:flex-row flex-col items-center gap-5">
-              <CustomInput
-                label="Compare Price At"
-                name="comparePriceAt"
-                value={productForm.comparePriceAt}
-                onChange={(e) =>
-                  setProductForm({
-                    ...productForm,
-                    comparePriceAt: e.target.value,
-                  })
-                }
-                placeholder="0.00"
-                required
-                type="number"
-              />
-              <CustomInput
-                label="Cost Price"
-                name="costPrice"
-                value={productForm.costPrice}
-                onChange={(e) =>
-                  setProductForm({
-                    ...productForm,
-                    costPrice: e.target.value,
-                  })
-                }
-                placeholder="0.00"
-                required
-                type="number"
-              />
-            </div>
-
             <CustomInput
               label="Brand"
               name="brand"
@@ -218,58 +210,113 @@ const ProductForm = ({
               placeholder="Dior, Nike, LYS"
               required
             />
-
-            <div className="flex items-center gap-5">
-              <CustomInput
-                label="Weight"
-                name="weight"
-                value={productForm.weight}
-                onChange={(e) =>
-                  setProductForm({
-                    ...productForm,
-                    weight: e.target.value,
-                  })
-                }
-                placeholder="Enter weight"
-                required
+            <div className="flex items-center gap-3 mt-4">
+              <input
+                type="checkbox"
+                id="isDefault"
+                checked={productForm.featured}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setProductForm({ ...productForm, featured: checked });
+                }}
+                className="w-4 h-4 accent-orange-500 cursor-pointer"
               />
-              <div className="flex flex-col gap-1 flex-1">
-                <label className="text-[14px] text-gray-400">Weight Unit</label>
-                <select
-                  className="bg-white/20 px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-orange-500"
-                  value={productForm.weightUnit}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      weightUnit: e.target.value,
-                    })
-                  }
-                >
-                  <option className="bg-black" value="g">
-                    g (Grams)
-                  </option>
-                  <option className="bg-black" value="kg">
-                    kg (Kilograms)
-                  </option>
-                  <option className="bg-black" value="lb">
-                    lb (Pounds)
-                  </option>
-                  <option className="bg-black" value="oz">
-                    oz (Ounces)
-                  </option>
-                </select>
-              </div>
+              <label
+                htmlFor="isDefault"
+                className="text-sm text-gray-300 cursor-pointer"
+              >
+                Add to featured products
+              </label>
             </div>
           </div>
+          <h1 className="font-semibold mb-4">Options</h1>
 
+          {/* Variant Options Section - Dedicated space for options */}
+          <div className="bg-white/5 rounded-lg p-5 mb-5">
+            <div className="grid grid-cols-1 gap-3">
+              <CustomInput
+                label="Option Name"
+                name="optionName"
+                value={currentProductOption.name}
+                onChange={(e) =>
+                  setCurrentProductOption({
+                    ...currentProductOption,
+                    name: e.target.value,
+                  })
+                }
+                placeholder="e.g., Color,Siz,Material"
+              />
+              {currentProductOption.value.map((val, i) => (
+                <div key={i}>
+                  <CustomInput
+                    label={`Option ${i + 1} value`}
+                    name="optionValue"
+                    value={val}
+                    onChange={(e) => {
+                      const newValues = [...currentProductOption.value];
+                      newValues[i] = e.target.value;
+                      setCurrentProductOption({
+                        ...currentProductOption,
+                        value: newValues,
+                      });
+                    }}
+                    placeholder={`Value ${i + 1}`}
+                  />
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => {
+                setCurrentProductOption({
+                  ...currentProductOption,
+                  value: [...currentProductOption.value, ""],
+                });
+              }}
+              className="mt-2 text-orange-400 hover:text-orange-300 text-sm flex items-center gap-1"
+            >
+              <Plus size={16} /> Add Value
+            </button>
+            <button
+              onClick={handleAddProductOption}
+              className="mt-3 bg-orange-500 hover:bg-orange-600 py-2 flex justify-center items-center gap-2 rounded-lg w-full transition-colors"
+            >
+              <LayersPlus />
+              Add Option
+            </button>
+          </div>
+          <div className="bg-white/5 rounded-lg p-4">
+            <h2 className="font-semibold mb-3">
+              Added options ({productForm.options.length})
+            </h2>
+            {productForm.options.map((opt: any, index: number) => (
+              <div
+                key={index}
+                className="flex items-center justify-between bg-white/10 p-3 rounded-lg mt-2"
+              >
+                <div className="grid grid-cols-2 gap-4 flex-1">
+                  <div>
+                    <span className="text-xs text-gray-400">Option Name</span>
+                    <p className="text-white">{opt.name}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400">Values</span>
+                    <p className="text-white">
+                      {opt.value?.map((val: any) => (
+                        <p>{val}</p>
+                      ))}
+                    </p>
+                  </div>
+                </div>
+                <button className="ml-3 p-2 hover:bg-red-500/20 rounded-lg text-red-400">
+                  <X size={20} />
+                </button>
+              </div>
+            ))}
+          </div>
           {/* Variant Section */}
           {type === "add" && (
             <div className="bg-white/5 rounded-lg p-5">
-              <h1 className="font-semibold mb-4">
-                Variants Price, Stock, SKU & Options
-              </h1>
-
-              {/* Show variant form for both add and edit */}
+              {/* Variant Form */}
               <div className="mt-5">
                 <div className="bg-white/5 rounded-lg p-5">
                   <div className="grid gap-5 md:grid-cols-3 grid-cols-2">
@@ -312,96 +359,98 @@ const ProductForm = ({
                       type="number"
                     />
                   </div>
-
-                  <div className="mt-5">
-                    <h2 className="font-semibold mb-3">
-                      Options{" "}
-                      <span className="text-xs text-gray-400">(optional)</span>
-                    </h2>
-
-                    <div className="grid gap-5 md:grid-cols-3 grid-cols-1">
-                      <div className="flex flex-col gap-3">
-                        <CustomInput
-                          label="Option 1 (Size)"
-                          name="option1"
-                          value={currentVariant.option1}
-                          onChange={(e) =>
-                            setCurrentVariant({
-                              ...currentVariant,
-                              option1: e.target.value,
-                            })
-                          }
-                          placeholder="Size"
-                        />
-                        <CustomInput
-                          label="Option 1 Value"
-                          name="option1Value"
-                          value={currentVariant.option1Value}
-                          onChange={(e) =>
-                            setCurrentVariant({
-                              ...currentVariant,
-                              option1Value: e.target.value,
-                            })
-                          }
-                          placeholder="M, L, XL"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-3">
-                        <CustomInput
-                          label="Option 2 (Color)"
-                          name="option2"
-                          value={currentVariant.option2}
-                          onChange={(e) =>
-                            setCurrentVariant({
-                              ...currentVariant,
-                              option2: e.target.value,
-                            })
-                          }
-                          placeholder="Color"
-                        />
-                        <CustomInput
-                          label="Option 2 Value"
-                          name="option2Value"
-                          value={currentVariant.option2Value}
-                          onChange={(e) =>
-                            setCurrentVariant({
-                              ...currentVariant,
-                              option2Value: e.target.value,
-                            })
-                          }
-                          placeholder="Red, Blue, Green"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-3">
-                        <CustomInput
-                          label="Option 3 (Material)"
-                          name="option3"
-                          value={currentVariant.option3}
-                          onChange={(e) =>
-                            setCurrentVariant({
-                              ...currentVariant,
-                              option3: e.target.value,
-                            })
-                          }
-                          placeholder="Material"
-                        />
-                        <CustomInput
-                          label="Option 3 Value"
-                          name="option3Value"
-                          value={currentVariant.option3Value}
-                          onChange={(e) =>
-                            setCurrentVariant({
-                              ...currentVariant,
-                              option3Value: e.target.value,
-                            })
-                          }
-                          placeholder="Cotton, Leather"
-                        />
-                      </div>
-                    </div>
+                  <div className="flex sm:flex-row flex-col items-center gap-5">
+                    <CustomInput
+                      label="Compare Price At"
+                      name="comparePriceAt"
+                      value={currentVariant.comparePriceAt}
+                      onChange={(e) =>
+                        setCurrentVariant({
+                          ...currentVariant,
+                          comparePriceAt: e.target.value,
+                        })
+                      }
+                      placeholder="0.00"
+                      required
+                      type="number"
+                    />
+                    <CustomInput
+                      label="Cost Price"
+                      name="costPrice"
+                      value={currentVariant.costPrice}
+                      onChange={(e) =>
+                        setCurrentVariant({
+                          ...currentVariant,
+                          costPrice: e.target.value,
+                        })
+                      }
+                      placeholder="0.00"
+                      required
+                      type="number"
+                    />
                   </div>
+                  {(intialData?.options || productForm.options).map(
+                    (opt: any, index: number) => {
+                      // Safely get the values array
+                      const optionValues = Array.isArray(opt.value)
+                        ? opt.value
+                        : Array.isArray(opt.values)
+                          ? opt.values.map((v: any) =>
+                              typeof v === "string" ? v : v.value,
+                            )
+                          : [];
+
+                      return (
+                        <div key={opt.id || index} className="space-y-1.5">
+                          <label
+                            htmlFor={`option-${opt.id || index}`}
+                            className="block text-sm font-medium mt-3 text-white/90"
+                          >
+                            {opt.name}
+                          </label>
+                          <select
+                            id={`option-${opt.id || index}`}
+                            className="w-full bg-white/10 backdrop-blur-sm border border-white/20 
+                 px-4 py-2.5 rounded-xl text-white 
+                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                 hover:bg-white/15 transition-all duration-200
+                 appearance-none cursor-pointer
+                 disabled:opacity-50 disabled:cursor-not-allowed"
+                            value={currentVariant.optionValues?.[index] || ""}
+                            onChange={(e) => {
+                              const values = [
+                                ...(currentVariant.optionValues || []),
+                              ];
+                              values[index] = e.target.value;
+                              setCurrentVariant({
+                                ...currentVariant,
+                                optionValues: values,
+                              });
+                            }}
+                          >
+                            <option value="" className="bg-gray-900 text-white">
+                              Select {opt.name}
+                            </option>
+                            {optionValues.map((val: any, idx: number) => {
+                              const displayValue =
+                                typeof val === "string"
+                                  ? val
+                                  : val.value || val;
+                              return (
+                                <option
+                                  key={`${opt.id || index}-${idx}`}
+                                  value={displayValue}
+                                  className="bg-gray-900 text-white py-1"
+                                >
+                                  {displayValue}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                      );
+                    },
+                  )}
                 </div>
               </div>
 
@@ -426,7 +475,7 @@ const ProductForm = ({
               {displayVariants.map((variant: any, index: number) => (
                 <div
                   key={index}
-                  className={`flex items-center justify-between bg-white/10 p-3 rounded-lg mt-2 cursor-pointer hover:bg-white/20 transition-colors`}
+                  className="flex items-center justify-between bg-white/10 p-3 rounded-lg mt-2"
                 >
                   <div className="grid grid-cols-3 gap-4 flex-1">
                     <div>
@@ -441,37 +490,13 @@ const ProductForm = ({
                       <span className="text-xs text-gray-400">Stock</span>
                       <p className="text-white">{variant.stock || "0"}</p>
                     </div>
-                    {variant.option1 && variant.option1Value && (
-                      <div>
-                        <span className="text-xs text-gray-400">
-                          {variant.option1}
-                        </span>
-                        <p className="text-white">{variant.option1Value}</p>
-                      </div>
-                    )}
-                    {variant.option2 && variant.option2Value && (
-                      <div>
-                        <span className="text-xs text-gray-400">
-                          {variant.option2}
-                        </span>
-                        <p className="text-white">{variant.option2Value}</p>
-                      </div>
-                    )}
-                    {variant.option3 && variant.option3Value && (
-                      <div>
-                        <span className="text-xs text-gray-400">
-                          {variant.option3}
-                        </span>
-                        <p className="text-white">{variant.option3Value}</p>
-                      </div>
-                    )}
                   </div>
                   <button
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering the select
+                      e.stopPropagation();
                       removeVariant(index);
                     }}
-                    className={`ml-3 p-2 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-colors `}
+                    className="ml-3 p-2 hover:bg-red-500/20 rounded-lg text-red-400"
                   >
                     <X size={20} />
                   </button>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Roboto } from "next/font/google";
 import "./globals.css";
+
 import { Toaster } from "react-hot-toast";
 
 // Inter is the most widely used font in modern e-commerce

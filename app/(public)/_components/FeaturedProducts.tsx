@@ -2,25 +2,24 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import ProductCard from "./ProductCard";
 
-interface TopProduct {
+interface FeaturedProduct {
   id: string;
   slug: string;
-  image: string | null;
-  category: string | null;
+  image: string;
+  category: string | undefined;
   name: string;
   brand: string | null;
-  price: string | null;
+  price: string;
   stock: number | null;
   comparePrice: string | null;
-  owner: string | null;
-  totalSold: string | null;
+  owner: string;
 }
 
-const Popular = ({
-  topProducts,
+const FeaturedProducts = ({
+  featuredProduct,
   loading,
 }: {
-  topProducts: TopProduct[];
+  featuredProduct: FeaturedProduct[];
   loading: boolean;
 }) => {
   if (loading)
@@ -39,13 +38,14 @@ const Popular = ({
 
   return (
     <div className="sm:px-4">
-      <h1 className="text-2xl py-5 font-bold">Popular Products</h1>
+      <h1 className="text-2xl py-5 font-bold">Featured Products</h1>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
-        {topProducts?.map((product: TopProduct, i: number) => (
+        {featuredProduct?.map((product: FeaturedProduct, i: number) => (
           <ProductCard
             key={i}
             {...{
               id: product.id,
+
               slug: product.slug,
               name: product.name,
               brand: product.brand || "",
@@ -65,4 +65,4 @@ const Popular = ({
   );
 };
 
-export default Popular;
+export default FeaturedProducts;

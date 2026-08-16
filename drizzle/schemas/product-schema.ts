@@ -8,6 +8,7 @@ import {
   pgEnum,
   index,
   boolean,
+  unique,
 } from "drizzle-orm/pg-core";
 import { organization } from "./auth-schema";
 
@@ -28,15 +29,14 @@ const products = pgTable(
     categoryId: uuid("category_id").references(() => categories.id, {
       onDelete: "set null",
     }),
+    featured: boolean("featured").default(false),
     name: text("name").notNull(),
+    slug: text("slug").notNull(),
     description: text("description"),
     status: text("status").default("draft"),
-    comparePriceAt: numeric("compare_price_at", { precision: 10, scale: 2 }),
-    costPrice: numeric("cost_price", { precision: 10, scale: 2 }),
     brand: text("brand"),
-    weightUnit: text("weight_unit").default("kg"),
-    weight: numeric("weight", { precision: 8, scale: 2 }),
     createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
   },
   (table) => ({
     // CRITICAL: All product queries filter by organization
@@ -49,7 +49,41 @@ const products = pgTable(
     ),
   }),
 );
+const productOptions = pgTable(
+  "product_options",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
 
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    uniqueOption: unique("product_options_unique").on(
+      table.productId,
+      table.name,
+    ),
+  }),
+);
+const productOptionValues = pgTable(
+  "product_option_values",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    productOptionId: uuid("product_option_id")
+      .notNull()
+      .references(() => productOptions.id, { onDelete: "cascade" }),
+    value: text("value").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    uniqueOptionValue: unique("product_option_values_unique").on(
+      table.productOptionId,
+      table.value,
+    ),
+  }),
+);
 const variants = pgTable("variants", {
   id: uuid("id").defaultRandom().primaryKey(),
   productId: uuid("product_id")
@@ -57,13 +91,38 @@ const variants = pgTable("variants", {
     .references(() => products.id, { onDelete: "cascade" }),
   sku: text("sku").notNull().unique(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  costPrice: numeric("cost_price", { precision: 10, scale: 2 }),
   stock: integer("stock").notNull().default(0),
-  option1: text("option1"),
-  option1Value: text("option1_value"),
-  option2: text("option2"),
-  option2Value: text("option2_value"),
-  option3: text("option3"),
-  option3Value: text("option3_value"),
+  comparePriceAt: numeric("compare_price_at", { precision: 10, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+const variantOptionValues = pgTable(
+  "variant_option_values",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => variants.id, { onDelete: "cascade" }),
+    productOptionValueId: uuid("product_option_value_id")
+      .notNull()
+      .references(() => productOptionValues.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    uniqueVariantOption: unique("variant_option_values_unique").on(
+      table.variantId,
+      table.productOptionValueId,
+    ),
+  }),
+);
+const variantImages = pgTable("variant_images", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  variantId: uuid("variant_id")
+    .notNull()
+    .references(() => variants.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  isPrimary: boolean("is_primary").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 const productImages = pgTable("product_images", {
@@ -76,4 +135,13 @@ const productImages = pgTable("product_images", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export { categories, products, variants, productImages };
+export {
+  categories,
+  products,
+  variants,
+  variantImages,
+  variantOptionValues,
+  productImages,
+  productOptions,
+  productOptionValues,
+};

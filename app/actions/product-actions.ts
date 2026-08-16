@@ -1,10 +1,32 @@
 "use server";
 
 import { db } from "@/drizzle/db";
-import { products, variants } from "@/drizzle/schema";
+import {
+  categories,
+  order,
+  orderItem,
+  organization,
+  productImages,
+  productOptions,
+  products,
+  user,
+  variants,
+} from "@/drizzle/schema";
 import { getOrganizationBySlug } from "@/lib/organization-check";
 import { table } from "console";
-import { and, count, eq, ilike, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  min,
+  ne,
+  or,
+  sql,
+  sum,
+} from "drizzle-orm";
 import { string } from "zod";
 
 export const getCategories = async () => {
@@ -49,13 +71,13 @@ export const getProducts = async (
   const productListData = productsList.map((product) => ({
     id: product.id,
     name: product.name,
-    costPrice: product.costPrice,
+    costPrice: product.variants?.[0]?.costPrice ?? null,
     createdAt: product.createdAt,
-    variants: product.variantCount,
-    price: product.variants.map((v) => v.price),
-    sku: product.variants.map((v) => v.sku),
-    stock: product.variants.map((v) => v.stock),
-    image: product.images.map((i) => i.url),
+    variants: product.variantCount ?? 0,
+    price: product.variants?.map((v) => v.price) ?? [],
+    sku: product.variants?.map((v) => v.sku) ?? [],
+    stock: product.variants?.map((v) => v.stock) ?? [],
+    image: product.images?.map((i) => i.url) ?? [],
     status: product.status,
   }));
   const totalCount = await db
@@ -69,9 +91,9 @@ export const getProducts = async (
 };
 interface GetProductProps {
   storeslug: string;
-  productId: string;
+  slug: string;
 }
-export const getProduct = async ({ storeslug, productId }: GetProductProps) => {
+export const getProduct = async ({ storeslug, slug }: GetProductProps) => {
   const organizationData = await getOrganizationBySlug(storeslug);
   if (!organizationData) {
     throw new Error("Organization doesn't exist");
@@ -79,10 +101,20 @@ export const getProduct = async ({ storeslug, productId }: GetProductProps) => {
   const product = await db.query.products.findFirst({
     where: and(
       eq(products.organizationId, organizationData.id),
-      eq(products.id, productId),
+      eq(products.slug, slug),
     ),
     with: {
-      variants: true,
+      options: {
+        with: {
+          values: true,
+        },
+      },
+      variants: {
+        with: {
+          optionValues: true,
+        },
+      },
+
       images: true,
       category: true,
     },
@@ -90,6 +122,20 @@ export const getProduct = async ({ storeslug, productId }: GetProductProps) => {
   if (!product) {
     throw new Error("Product not exist");
   }
+  const transformedOptions = product.options.map((option) => ({
+    ...option,
+    // Add 'value' property as array of strings for easy consumption
+    value: option.values?.map((v) => v.value) || [],
+    // Keep 'values' as the full objects if needed
+    values: option.values || [],
+  }));
+
+  // Transform variants to include option values
+  const transformedVariants = product.variants.map((variant) => ({
+    ...variant,
+    optionValues: variant.optionValues.filter(Boolean) || [],
+  }));
+
   return {
     id: product.id,
     organizationId: product.organizationId,
@@ -97,12 +143,15 @@ export const getProduct = async ({ storeslug, productId }: GetProductProps) => {
     name: product.name,
     description: product.description,
     status: product.status,
-    comparePriceAt: product.comparePriceAt,
-    costPrice: product.costPrice,
+    comparePriceAt: product.variants.map((variant) => ({
+      url: variant.comparePriceAt,
+    })),
+    costPrice: product.variants.map((variant) => ({
+      url: variant.costPrice,
+    })),
     brand: product.brand,
-    weight: product.weight,
-    weightUnit: product.weightUnit,
-    variants: product.variants,
+    options: transformedOptions,
+    variants: transformedVariants,
     images: product.images.map((image) => ({
       url: image.url,
     })),
@@ -138,8 +187,21 @@ export const getVariantsList = async (storeslug: string, productId: string) => {
 
   const variantsList = await db.query.variants.findMany({
     where: eq(variants.productId, productId),
+    with: {
+      optionValues: {
+        with: {
+          productOptionValue: true,
+        },
+      },
+    },
   });
-  return variantsList;
+  const options = await db.query.productOptions.findMany({
+    where: eq(productOptions.productId, productId),
+    with: {
+      values: true,
+    },
+  });
+  return { variantsList, options };
 };
 export const removeVariant = async ({
   storeslug,
@@ -155,17 +217,139 @@ export const removeVariant = async ({
   const remove = await db.delete(variants).where(eq(variants.id, variantId));
   return { success: true };
 };
-export const getProductDetail = async (productId: string) => {
+export const getProductDetail = async (slug: string) => {
   const product = await db.query.products.findFirst({
-    where: and(eq(products.id, productId)),
+    where: eq(products.slug, slug),
     with: {
-      variants: true,
+      options: {
+        with: {
+          values: true,
+        },
+      },
+
+      variants: {
+        with: {
+          optionValues: {
+            with: {
+              productOptionValue: true,
+            },
+          },
+        },
+      },
       images: true,
       category: true,
+      organization: true,
     },
   });
   if (!product) {
     throw new Error("Product not exist");
   }
+
   return product;
+};
+export const getRelatedProducts = async (
+  brand: any,
+  categoryId: any,
+  productId: any,
+) => {
+  const relatedProducts = await db.query.products.findMany({
+    where: and(
+      eq(products.categoryId, categoryId),
+      eq(products.brand, brand),
+      ne(products.id, productId),
+    ),
+    with: {
+      options: {
+        with: {
+          values: true,
+        },
+      },
+
+      variants: {
+        with: {
+          optionValues: {
+            with: {
+              productOptionValue: true,
+            },
+          },
+        },
+      },
+      images: true,
+      category: true,
+      organization: true,
+    },
+    limit: 5,
+  });
+  return relatedProducts;
+};
+export const getFeaturedProduct = async () => {
+  // Get featured products
+  const featured = await db.query.products.findMany({
+    where: eq(products.featured, true),
+    with: {
+      category: true,
+      images: true,
+      variants: true,
+      organization: true,
+    },
+  });
+  const transformed = featured.map((product) => ({
+    id: product.id,
+    slug: product.slug,
+    image: product.images[0].url,
+    category: product.category?.name,
+    name: product.name,
+    brand: product.brand,
+    stock: product.variants[0].stock,
+    price: product.variants[0].price,
+    comparePrice: product.variants[0].comparePriceAt,
+    owner: product.organization.name,
+  }));
+  // Get top-selling products based on variant sales
+  const topProducts = await db
+    .select({
+      id: products.id,
+      slug: products.slug,
+      image: min(productImages.url).as("image"),
+      category: categories.name,
+      name: products.name,
+      brand: products.brand,
+      price: min(variants.price).as("price"),
+      stock: min(variants.stock).as("stock"),
+      comparePrice: min(variants.comparePriceAt).as("comparePriceAt"),
+      owner: organization.name,
+      totalSold: sum(orderItem.quantity).as("totalSold"),
+    })
+    .from(products)
+    .innerJoin(variants, eq(variants.productId, products.id)) // Connect products to variants
+    .innerJoin(orderItem, eq(orderItem.variantId, variants.id)) // Connect variants to order items
+    .innerJoin(order, eq(order.id, orderItem.orderId))
+    .leftJoin(categories, eq(products.categoryId, categories.id))
+    .leftJoin(organization, eq(order.organizationId, organization.id))
+    .leftJoin(productImages, eq(productImages.productId, products.id))
+    .groupBy(
+      products.id,
+      products.name,
+      products.brand,
+      categories.name,
+      organization.name,
+    )
+    .orderBy(desc(sum(orderItem.quantity)))
+    .limit(10);
+
+  const topStores = await db
+    .select({
+      name: organization.name,
+      totalProduct: sql<number>`COUNT(DISTINCT ${products.id})`.as(
+        "totalProduct",
+      ),
+      totalOrders: sql<number>`COUNT(DISTINCT ${order.id})`.as("totalOrders"),
+    })
+    .from(organization)
+    .innerJoin(products, eq(products.organizationId, organization.id))
+    .innerJoin(order, eq(order.organizationId, organization.id))
+    .groupBy(organization.id, organization.name)
+    .orderBy(desc(sum(order.total)))
+    .limit(5);
+  return { topProducts, transformed, topStores };
 };

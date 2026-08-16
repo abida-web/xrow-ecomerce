@@ -27,6 +27,11 @@ export async function GET() {
       with: {
         variant: {
           with: {
+            optionValues: {
+              with: {
+                productOptionValue: true,
+              },
+            },
             product: {
               with: {
                 images: {

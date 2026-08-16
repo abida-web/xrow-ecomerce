@@ -77,7 +77,10 @@ const CreateStorePage = () => {
   }
 
   function setActiveOrganization(orgId: string, slug: string) {
-    authClient.organization.setActive({ organizationId: orgId });
+    authClient.organization.setActive({
+      organizationId: orgId,
+      organizationSlug: slug,
+    });
     router.push(`/dashboard/${slug}`);
   }
 
@@ -100,7 +103,7 @@ const CreateStorePage = () => {
           onSubmit={handleSubmit(handleCreateStore)}
           className="space-y-6 bg-white p-8 rounded-xl shadow-sm border border-gray-200"
         >
-          {hasOrganization && organizaions && organizaions.length > 0 && (
+          {organizaions && organizaions.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-gray-700">Your Stores</h3>
               <div className="space-y-3">

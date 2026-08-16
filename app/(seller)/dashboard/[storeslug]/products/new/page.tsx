@@ -44,25 +44,21 @@ const NewProduct = () => {
           categoryId: "",
           name: "",
           description: "",
+          featured: false,
           status: "draft",
-          comparePriceAt: "",
-          costPrice: "",
           brand: "",
-          weight: "",
-          weightUnit: "kg",
           variants: [],
+          options: [],
           images: [],
         });
         setCurrentVariant({
           sku: "",
           price: "",
           stock: "",
-          option1: "",
-          option1Value: "",
-          option2: "",
-          option2Value: "",
-          option3: "",
-          option3Value: "",
+          comparePriceAt: "",
+          costPrice: "",
+          variantImages: [],
+          optionValues: [],
         });
       } else {
         toast.error("Product submission failed");

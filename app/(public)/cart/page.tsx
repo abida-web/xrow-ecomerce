@@ -187,8 +187,13 @@ const CartPage = () => {
     }));
   };
 
+  // Using DaisyUI (if you have it installed)
   if (isLoading) {
-    return <div className="text-center py-10">Loading cart...</div>;
+    return (
+      <div className="flex items-center justify-center py-10 mt-30 text-orange-500">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    );
   }
 
   return (
@@ -368,7 +373,7 @@ const CartPage = () => {
                     const subTotal = item.variant.price * item.quantity;
                     return (
                       <div key={item.id} className="flex items-center">
-                        <div className="grid grid-cols-4 items-center gap-5 flex-1 bg-gray-900 p-3 rounded-lg">
+                        <div className="grid grid-cols-4 items-center gap-5 flex-1 bg-white/10 p-3 rounded-lg">
                           <img
                             src={item.variant?.product?.images?.[0]?.url}
                             className="w-[80px] h-[100px] object-cover rounded-lg"
@@ -381,12 +386,11 @@ const CartPage = () => {
                             <p className="text-gray-400 text-xs">
                               #{item.variantId.slice(0, 10)}
                             </p>
-                            {item.variant?.option1 && (
-                              <p className="text-xs text-gray-400">
-                                {item.variant.option1}:{" "}
-                                {item.variant.option1Value}
-                              </p>
-                            )}
+                            <p className="text-sm text-gray-300">
+                              {item?.variant?.optionValues
+                                .map((val: any) => val.productOptionValue.value)
+                                .join(" - ")}
+                            </p>
                           </div>
                           <div className="flex gap-5 items-center">
                             <p className="bg-white/10 py-1 text-xs px-1.5 rounded-full">
@@ -451,8 +455,7 @@ const CartPage = () => {
             )}
           </div>
         )}
-
-        <div className="w-full bg-gray-900 p-5 h-fit rounded-lg sticky top-5">
+        <div className=" w-full bg-white/5 p-5 h-fit rounded-lg sticky top-5">
           <h1 className="pb-4 border-b border-gray-500 font-semibold">
             Order Summary
           </h1>

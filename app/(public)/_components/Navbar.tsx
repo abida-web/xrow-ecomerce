@@ -1,40 +1,38 @@
 "use client";
+import { authClient } from "@/lib/auth-client";
+import { navLinks } from "@/lib/constants/nav-links";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useQuery } from "@tanstack/react-query";
-import { Menu, Search, ShoppingCart, User, X } from "lucide-react";
+import { Menu, Search, ShoppingCart, Store, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useState } from "react";
+import { useState } from "react";
 
 const Navbar = () => {
-  const navLinks = [
-    { name: "Home", href: "" },
-    { name: "Products", href: "products" },
-    { name: "Categories", href: "categories" },
-  ];
   const path = usePathname();
   const [searchTerm, setSearchTerm] = useState("");
   const [openMenu, setOpenMenu] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
   const [debouncedQuery] = useDebouncedValue(searchTerm, {
-    wait: 500, // Wait 500ms after last change
+    wait: 500,
   });
-  const isActive = (href: string) => {
-    if (href === "" && path === "/") return true;
-    if (href !== "" && path === href) return true;
-    return false;
-  };
+  const { data: session } = authClient.useSession();
+  const { data: organizaions, error } = authClient.useListOrganizations();
+  const { data: activeOrganization } = authClient.useActiveOrganization();
+
   const { data } = useQuery({
     queryKey: ["search", debouncedQuery],
     queryFn: async () => {
       const response = await fetch(
-        `api/public/products?search=${encodeURIComponent(debouncedQuery)}`,
+        `/api/public/products?search=${encodeURIComponent(debouncedQuery)}`,
       );
       return await response.json();
     },
-
     enabled: searchTerm.trim().length > 0,
   });
-  const { data: cartItems, isLoading } = useQuery({
+
+  const { data: cartItems } = useQuery({
     queryKey: ["cart"],
     queryFn: async () => {
       const res = await fetch("/api/cart/items", {
@@ -46,23 +44,24 @@ const Navbar = () => {
   });
 
   const router = useRouter();
+
   return (
     <>
       {/* Desktop Navbar */}
       <div className="hidden md:flex justify-between items-center px-4 -mt-5">
         <Link href="/">
-          <img src="./logo.PNG" className="h-20 object-cover" alt="Logo" />
+          <img src="/logo.PNG" className="h-20 object-cover" alt="Logo" />
         </Link>
         <div className="flex gap-5 text-gray-400">
           {navLinks.map((nav) => (
             <Link
               key={nav.href}
-              href={nav.href === "" ? "/" : nav.href}
+              href={nav.href === "/" ? "/" : nav.href}
               className={`${
-                isActive(nav.href)
-                  ? "text-orange-500 underline decoration-2 underline-offset-8"
+                (nav.href === "/" ? path === "/" : path.startsWith(nav.href))
+                  ? "text-orange-500 font-semibold bg-orange-500/10 py-1 shadow-xs shadow-orange-500 rounded-full "
                   : "text-gray-400 hover:text-white"
-              } transition-colors font-medium`}
+              } transition-colors px-5 font-medium`}
             >
               {nav.name}
             </Link>
@@ -73,21 +72,32 @@ const Navbar = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setShowResults(true);
+              }}
+              onFocus={() => {
+                if (searchTerm.trim().length > 0) setShowResults(true);
+              }}
               type="text"
               placeholder="Search product..."
               className="w-full bg-white/5 pl-10 pr-4 py-2 rounded-full shadow-sm shadow-orange-500/30 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
             />
             {/* Results dropdown */}
-            {data && data.length > 0 && (
+            {showResults && data && data.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
                 {data.map((sp: any, i: number) => (
-                  <div
+                  <Link
                     key={i}
-                    className="px-4 py-2 hover:bg-white/10 cursor-pointer"
+                    href={`/products/${sp.id}`}
+                    onClick={() => {
+                      setSearchTerm("");
+                      setShowResults(false);
+                    }}
+                    className="block px-4 py-2 hover:bg-white/10 cursor-pointer"
                   >
                     <p className="text-white">{sp.name || sp.brand}</p>
-                  </div>
+                  </Link>
                 ))}
                 <p
                   onClick={() => {
@@ -95,6 +105,7 @@ const Navbar = () => {
                       `/products?search=${encodeURIComponent(searchTerm)}`,
                     );
                     setSearchTerm("");
+                    setShowResults(false);
                   }}
                   className="text-sm mb-4 text-center cursor-pointer text-orange-500 hover:text-orange-400 transition-colors"
                 >
@@ -103,12 +114,29 @@ const Navbar = () => {
               </div>
             )}
           </div>
-          <button
-            onClick={() => router.push("./account")}
-            className="hover:text-orange-500 transition-colors"
-          >
-            <User size={20} />
-          </button>
+          {!session ? (
+            <Link
+              href="/login"
+              className="hover:text-orange-500 transition-colors"
+            >
+              Login
+            </Link>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/dashboard/${activeOrganization?.slug}`}
+                className="hover:text-orange-500 transition-colors hover:bg-orange-500/20 p-2 rounded-full"
+              >
+                <Store size={20} />
+              </Link>
+              <Link
+                href="/account"
+                className="hover:text-orange-500 transition-colors hover:bg-orange-500/20 p-2 rounded-full"
+              >
+                <User size={20} />
+              </Link>
+            </div>
+          )}
           <button
             onClick={() => router.push("/cart")}
             className="hover:text-orange-500 transition-colors relative"
@@ -122,32 +150,43 @@ const Navbar = () => {
       </div>
 
       {/* Mobile Navbar */}
-      <div className="md:hidden flex items-center justify-between px-4 py-3">
+      <div className="md:hidden flex items-center justify-between py-3">
         <button
           onClick={() => setOpenMenu(true)}
-          className="bg-orange-500 text-white p-2 rounded-lg"
+          className="bg-orange-500/20 shadow-xs transition-all duration-500 hover:shadow-orange-500 text-white p-2 rounded-lg"
         >
           <Menu size={20} />
         </button>
-        <div className="relative  min-w-[100px]">
+        <div className="relative min-w-[100px] mx-2">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setShowResults(true);
+            }}
+            onFocus={() => {
+              if (searchTerm.trim().length > 0) setShowResults(true);
+            }}
             type="text"
             placeholder="Search product..."
-            className="w-full bg-white/5 pl-10 pr-4 py-2 rounded-full shadow-sm shadow-orange-500/30 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
+            className="w-full bg-white/5 pl-10 pr-4 py-1 rounded-full shadow-sm shadow-orange-500/30 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
           />
           {/* Results dropdown */}
-          {data && data.length > 0 && (
+          {showResults && data && data.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
               {data.map((sp: any, i: number) => (
-                <div
+                <Link
                   key={i}
-                  className="px-4 py-2 hover:bg-white/10 cursor-pointer"
+                  href={`/products/${sp.id}`}
+                  onClick={() => {
+                    setSearchTerm("");
+                    setShowResults(false);
+                  }}
+                  className="block px-4 py-2 hover:bg-white/10 cursor-pointer"
                 >
                   <p className="text-white">{sp.name || sp.brand}</p>
-                </div>
+                </Link>
               ))}
               <p
                 onClick={() => {
@@ -155,6 +194,7 @@ const Navbar = () => {
                     `/products?search=${encodeURIComponent(searchTerm)}`,
                   );
                   setSearchTerm("");
+                  setShowResults(false);
                 }}
                 className="text-sm mb-4 text-center cursor-pointer text-orange-500 hover:text-orange-400 transition-colors"
               >
@@ -164,6 +204,29 @@ const Navbar = () => {
           )}
         </div>
 
+        {!session ? (
+          <Link
+            href="/login"
+            className="hover:text-orange-500 transition-colors"
+          >
+            Login
+          </Link>
+        ) : (
+          <div className="flex items-center">
+            <Link
+              href={`/dashboard/${activeOrganization?.slug}`}
+              className="hover:text-orange-500 hover:bg-orange-500/20 p-2 rounded-full transition-colors"
+            >
+              <Store size={20} />
+            </Link>
+            <Link
+              href="/account"
+              className="hover:text-orange-500 hover:bg-orange-500/20 p-2 rounded-full transition-colors"
+            >
+              <User size={20} />
+            </Link>
+          </div>
+        )}
         <button
           onClick={() => router.push("/cart")}
           className="hover:text-orange-500 transition-colors relative"
@@ -204,7 +267,11 @@ const Navbar = () => {
                   href={nav.href === "" ? "/" : nav.href}
                   onClick={() => setOpenMenu(false)}
                   className={`${
-                    isActive(nav.href)
+                    (
+                      nav.href === "/"
+                        ? path === "/"
+                        : path.startsWith(nav.href)
+                    )
                       ? "text-orange-500"
                       : "text-gray-300 hover:text-white"
                   } text-lg transition-colors`}
@@ -212,16 +279,6 @@ const Navbar = () => {
                   {nav.name}
                 </Link>
               ))}
-            </div>
-
-            {/* User */}
-            <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-700">
-              <User
-                onClick={() => router.push("./account")}
-                size={20}
-                className="text-gray-400"
-              />
-              <span className="text-gray-300">Profile</span>
             </div>
           </div>
         </>

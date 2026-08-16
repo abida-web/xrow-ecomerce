@@ -7,9 +7,10 @@ import {
   order,
   orderItem,
   organization,
+  user,
 } from "@/drizzle/schema";
 import { auth } from "@/lib/auth";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -81,4 +82,38 @@ export const getDeliveryDetails = async (orderId: string | null) => {
     },
   });
   return listDetails;
+};
+export const getCustomers = async (storeslug: string, search: string) => {
+  const storeData = await db.query.organization.findFirst({
+    where: eq(organization.slug, storeslug),
+  });
+  if (!storeData) {
+    throw new Error("store data not found");
+  }
+  const data = await db
+    .select({
+      customer: user.name,
+      email: user.email,
+      orders: count(order.id),
+      phone: sql<string | null>`MAX(${order.shippingPhone})`,
+      total: sql<number>`COALESCE(SUM(${order.total}), 0)`,
+      lastOrderDate: sql<Date | null>`MAX(${order.createdAt})`,
+    })
+    .from(user)
+    .innerJoin(
+      order,
+      and(eq(order.userId, user.id), eq(order.organizationId, storeData.id)),
+    )
+    .where(
+      and(
+        or(
+          ilike(user.name, `%${search.trim()}%`),
+          ilike(user.email, `%${search.trim()}%`),
+          ilike(order.shippingPhone, `%${search.trim()}%`),
+        ),
+      ),
+    )
+    .groupBy(user.id, user.name, user.email) // Group by user
+    .orderBy(desc(sql`MAX(${order.createdAt})`));
+  return data;
 };

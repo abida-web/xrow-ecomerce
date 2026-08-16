@@ -34,7 +34,16 @@ const ProductDetailPage = () => {
   const [type, setType] = useState("");
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
     null,
-  ); // ADD THIS
+  );
+
+  // Get both currentVariant and productForm from the store
+  const {
+    currentVariant,
+    setCurrentVariant,
+    currentProductOption,
+    setCurrentProductOption,
+  } = useProduct();
+
   const { isPending, data, error, refetch } = useQuery({
     queryKey: ["getVariants", productId, storeslug],
     queryFn: () => getVariantsList(storeslug, productId),
@@ -45,61 +54,60 @@ const ProductDetailPage = () => {
     const res = await removeVariant({ storeslug, variantId });
     if (res.success) {
       refetch();
+      toast.success("Variant deleted successfully");
+    } else {
+      toast.error("Failed to delete variant");
     }
   };
-
-  const currentVariant = useProduct((state) => state.currentVariant);
-  const setCurrentVariant = useProduct((state) => state.setCurrentVariant);
 
   const handleEditClick = (variant: any) => {
     setCurrentVariant({
       sku: variant.sku || "",
       price: String(variant.price || ""),
       stock: String(variant.stock || ""),
-      option1: variant.option1 || "",
-      option1Value: variant.option1Value || "",
-      option2: variant.option2 || "",
-      option2Value: variant.option2Value || "",
-      option3: variant.option3 || "",
-      option3Value: variant.option3Value || "",
+      comparePriceAt: variant.comparePriceAt || "",
+      costPrice: variant.costPrice || "",
+      variantImages: variant.variantImages || [],
+      optionValues: variant.optionValues || [],
     });
-    setSelectedVariantId(variant.id); // ADD THIS
+
+    setSelectedVariantId(variant.id);
     setOpenModal(true);
     setType("edit");
   };
+
   const handleAddClick = () => {
     setCurrentVariant({
       sku: "",
       price: "",
       stock: "",
-      option1: "",
-      option1Value: "",
-      option2: "",
-      option2Value: "",
-      option3: "",
-      option3Value: "",
+      comparePriceAt: "",
+      costPrice: "",
+      variantImages: [],
+      optionValues: [],
     });
-    setSelectedVariantId(null); // ADD THIS
+
+    setSelectedVariantId(null);
     setOpenModal(true);
     setType("add");
   };
 
   const handleCloseModal = () => {
     setOpenModal(false);
-    setSelectedVariantId(null); // ADD THIS
+    setSelectedVariantId(null);
     setCurrentVariant({
       sku: "",
       price: "",
       stock: "",
-      option1: "",
-      option1Value: "",
-      option2: "",
-      option2Value: "",
-      option3: "",
-      option3Value: "",
+      comparePriceAt: "",
+      costPrice: "",
+      variantImages: [],
+      optionValues: [],
     });
   };
+
   const queryClient = useQueryClient();
+  const options = data?.options;
   const createmutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/dashboard/variants", {
@@ -107,63 +115,70 @@ const ProductDetailPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentVariant, storeslug, productId }),
       });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to create variant");
+      }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["getVariants", productId, storeslug],
       });
-      setCurrentVariant({
-        sku: "",
-        price: "",
-        stock: "",
-        option1: "",
-        option1Value: "",
-        option2: "",
-        option2Value: "",
-        option3: "",
-        option3Value: "",
-      });
+      toast.success("Variant created successfully");
       handleCloseModal();
       refetch();
     },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to create variant");
+    },
   });
+
   const updatemutation = useMutation({
     mutationFn: async (varId: string) => {
       const res = await fetch(`/api/dashboard/variants/${varId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentVariant, storeslug, productId }),
+        body: JSON.stringify({
+          currentVariant,
+          storeslug,
+          productId,
+          currentProductOption,
+        }),
       });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to update variant");
+      }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["getVariants", productId, storeslug],
       });
-      setCurrentVariant({
-        sku: "",
-        price: "",
-        stock: "",
-        option1: "",
-        option1Value: "",
-        option2: "",
-        option2Value: "",
-        option3: "",
-        option3Value: "",
-      });
+      toast.success("Variant updated successfully");
       handleCloseModal();
       refetch();
     },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update variant");
+    },
   });
+
   const handleCreateVariant = (e: React.FormEvent) => {
     e.preventDefault();
     createmutation.mutate();
   };
+
   const handleUpdateVariant = (e: React.FormEvent, variantId: string) => {
     e.preventDefault();
+    if (!variantId) {
+      toast.error("No variant selected for update");
+      return;
+    }
     updatemutation.mutate(variantId);
   };
+
   if (isPending) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -181,10 +196,16 @@ const ProductDetailPage = () => {
     );
   }
 
-  if (!data || data.length === 0) {
+  if (!data?.variantsList || data.variantsList.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-400">No variants found for this product.</p>
+        <button
+          onClick={handleAddClick}
+          className="mt-4 bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg transition-colors"
+        >
+          Add First Variant
+        </button>
       </div>
     );
   }
@@ -192,14 +213,11 @@ const ProductDetailPage = () => {
   return (
     <div>
       <button
-        onClick={() => {
-          handleAddClick();
-          setType("add");
-        }}
-        className="text-green-400 mb-3 flex items-center gap-2 bg-white rounded-full py-1 px-3 transition-colors"
+        onClick={handleAddClick}
+        className="text-green-400 mb-3 flex items-center gap-2 bg-white rounded-full py-1 px-3 transition-colors hover:bg-white/10"
       >
         <Plus size={15} />
-        Add
+        Add Variant
       </button>
       <div className="overflow-x-auto rounded-lg border border-white/10">
         <table className="w-full text-sm">
@@ -213,21 +231,22 @@ const ProductDetailPage = () => {
             </tr>
           </thead>
           <tbody>
-            {data.map((variant) => {
+            {data.variantsList.map((variant) => {
               const variantName =
-                [
-                  variant.option1 &&
-                    variant.option1Value &&
-                    `${variant.option1}: ${variant.option1Value}`,
-                  variant.option2 &&
-                    variant.option2Value &&
-                    `${variant.option2}: ${variant.option2Value}`,
-                  variant.option3 &&
-                    variant.option3Value &&
-                    `${variant.option3}: ${variant.option3Value}`,
-                ]
+                variant.optionValues
+                  ?.map((val) => val.productOptionValue?.value)
                   .filter(Boolean)
-                  .join(" | ") || "Default";
+                  .join(", ") || "No options";
+
+              const transformedVariant = {
+                id: variant.id,
+                sku: variant.sku,
+                price: variant.price,
+                stock: variant.stock,
+                comparePriceAt: variant.comparePriceAt,
+                costPrice: variant.costPrice,
+                optionValues: variant.optionValues || [],
+              };
 
               return (
                 <tr
@@ -240,24 +259,22 @@ const ProductDetailPage = () => {
                     ${Number(variant.price || 0).toFixed(2)}
                   </td>
                   <td className="px-4 py-3">{Number(variant.stock || 0)}</td>
-
-                  <td className="px-4 py-3 text-center flex items-center gap-5">
-                    <button
-                      onClick={() => {
-                        handleEditClick(variant);
-                        setType("edit");
-                      }}
-                      className=" text-xs flex gap-2 bg-orange-500 hover:bg-orange-600 px-2 py-1 rounded-sm font-medium transition-colors"
-                    >
-                      <Edit3 size={15} />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteVariant(variant.id)}
-                      className="text-red-400 hover:bg-red-500/50 rounded-full p-2 hover:text-red-300 transition-colors"
-                    >
-                      <Trash2Icon size={15} />
-                    </button>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => handleEditClick(transformedVariant)}
+                        className="text-xs flex gap-2 bg-orange-500 hover:bg-orange-600 px-2 py-1 rounded-sm font-medium transition-colors"
+                      >
+                        <Edit3 size={15} />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteVariant(variant.id)}
+                        className="text-red-400 hover:bg-red-500/20 rounded-full p-2 hover:text-red-300 transition-colors"
+                      >
+                        <Trash2Icon size={15} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -266,23 +283,29 @@ const ProductDetailPage = () => {
         </table>
       </div>
 
-      {/* MOVED MODAL OUTSIDE THE MAP FUNCTION */}
+      {/* Modal */}
       {openModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-gray-700 rounded-lg p-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h1 className="font-semibold">
-                Variants Price, Stock, SKU & Options
+              <h1 className="font-semibold text-xl">
+                {type === "add" ? "Add New Variant" : "Edit Variant"}
               </h1>
               <button
                 onClick={handleCloseModal}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-400 hover:text-white transition-colors"
               >
                 ✕
               </button>
             </div>
 
-            <div className="mt-5">
+            <form
+              onSubmit={
+                type === "add"
+                  ? handleCreateVariant
+                  : (e) => handleUpdateVariant(e, selectedVariantId!)
+              }
+            >
               <div className="bg-white/5 rounded-lg p-5">
                 <div className="grid gap-5 md:grid-cols-3 grid-cols-2">
                   <CustomInput
@@ -296,6 +319,7 @@ const ProductDetailPage = () => {
                       })
                     }
                     placeholder="SKU-123"
+                    required
                   />
                   <CustomInput
                     label="Price"
@@ -309,6 +333,7 @@ const ProductDetailPage = () => {
                     }
                     placeholder="0.00"
                     type="number"
+                    required
                   />
                   <CustomInput
                     label="Stock"
@@ -322,113 +347,113 @@ const ProductDetailPage = () => {
                     }
                     placeholder="0"
                     type="number"
+                    required
                   />
                 </div>
 
-                <div className="mt-5">
-                  <h2 className="font-semibold mb-3">
-                    Options{" "}
-                    <span className="text-xs text-gray-400">(optional)</span>
-                  </h2>
+                <div className="grid gap-5 md:grid-cols-2 grid-cols-1 mt-4">
+                  <CustomInput
+                    label="Compare Price At"
+                    name="comparePriceAt"
+                    value={currentVariant.comparePriceAt}
+                    onChange={(e) =>
+                      setCurrentVariant({
+                        ...currentVariant,
+                        comparePriceAt: e.target.value,
+                      })
+                    }
+                    placeholder="0.00"
+                    type="number"
+                  />
+                  <CustomInput
+                    label="Cost Price"
+                    name="costPrice"
+                    value={currentVariant.costPrice}
+                    onChange={(e) =>
+                      setCurrentVariant({
+                        ...currentVariant,
+                        costPrice: e.target.value,
+                      })
+                    }
+                    placeholder="0.00"
+                    type="number"
+                  />
+                </div>
 
-                  <div className="grid gap-5 md:grid-cols-3 grid-cols-1">
-                    <div className="flex flex-col gap-3">
-                      <CustomInput
-                        label="Option 1 (Size)"
-                        name="option1"
-                        value={currentVariant.option1}
-                        onChange={(e) =>
-                          setCurrentVariant({
-                            ...currentVariant,
-                            option1: e.target.value,
-                          })
-                        }
-                        placeholder="Size"
-                      />
-                      <CustomInput
-                        label="Option 1 Value"
-                        name="option1Value"
-                        value={currentVariant.option1Value}
-                        onChange={(e) =>
-                          setCurrentVariant({
-                            ...currentVariant,
-                            option1Value: e.target.value,
-                          })
-                        }
-                        placeholder="M, L, XL"
-                      />
-                    </div>
+                {/* Product Options */}
+                {data?.options && data.options.length > 0 && (
+                  <div className="mt-5">
+                    <h2 className="font-semibold mb-3">
+                      Product Options
+                      <span className="text-xs text-gray-400 ml-2">
+                        (select values for this variant)
+                      </span>
+                    </h2>
 
-                    <div className="flex flex-col gap-3">
-                      <CustomInput
-                        label="Option 2 (Color)"
-                        name="option2"
-                        value={currentVariant.option2}
-                        onChange={(e) =>
-                          setCurrentVariant({
-                            ...currentVariant,
-                            option2: e.target.value,
-                          })
-                        }
-                        placeholder="Color"
-                      />
-                      <CustomInput
-                        label="Option 2 Value"
-                        name="option2Value"
-                        value={currentVariant.option2Value}
-                        onChange={(e) =>
-                          setCurrentVariant({
-                            ...currentVariant,
-                            option2Value: e.target.value,
-                          })
-                        }
-                        placeholder="Red, Blue, Green"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                      <CustomInput
-                        label="Option 3 (Material)"
-                        name="option3"
-                        value={currentVariant.option3}
-                        onChange={(e) =>
-                          setCurrentVariant({
-                            ...currentVariant,
-                            option3: e.target.value,
-                          })
-                        }
-                        placeholder="Material"
-                      />
-                      <CustomInput
-                        label="Option 3 Value"
-                        name="option3Value"
-                        value={currentVariant.option3Value}
-                        onChange={(e) =>
-                          setCurrentVariant({
-                            ...currentVariant,
-                            option3Value: e.target.value,
-                          })
-                        }
-                        placeholder="Cotton, Leather"
-                      />
+                    <div className="grid gap-5 md:grid-cols-2 grid-cols-1">
+                      {data.options.map((opt, index) => (
+                        <div key={opt.id} className="space-y-1.5">
+                          <label
+                            htmlFor={`option-${opt.id}`}
+                            className="block text-sm font-medium text-white/90"
+                          >
+                            {opt.name}
+                          </label>
+                          <select
+                            id={`option-${opt.id}`}
+                            className="w-full bg-white/10 backdrop-blur-sm border border-white/20 
+                                     px-4 py-2.5 rounded-xl text-white 
+                                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                                     hover:bg-white/15 transition-all duration-200
+                                     appearance-none cursor-pointer"
+                            value={currentVariant.optionValues?.[index] || ""} //use options itself not variant options
+                            onChange={(e) => {
+                              const values = [...currentVariant.optionValues];
+                              values[index] = e.target.value;
+                              setCurrentVariant({
+                                ...currentVariant,
+                                optionValues: values,
+                              });
+                            }}
+                          >
+                            <option value="" className="bg-gray-900 text-white">
+                              Select {opt.name}
+                            </option>
+                            {opt.values?.map((val) => (
+                              <option
+                                key={val.id}
+                                value={val.value}
+                                className="bg-gray-900 text-white py-1"
+                              >
+                                {val.value}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
               </div>
-            </div>
 
-            {/* FIXED: Using selectedVariantId instead of variant?.id */}
-            <button
-              onClick={
-                type === "add"
-                  ? handleCreateVariant
-                  : (e) => handleUpdateVariant(e, selectedVariantId!)
-              }
-              className="mt-5 bg-orange-500 hover:bg-orange-600 py-2 flex justify-center items-center gap-2 rounded-lg w-full transition-colors"
-            >
-              {type === "edit" ? <Bookmark /> : <LayersPlus />}
-              {type === "edit" ? "Save changes" : "Add variant"}
-            </button>
+              <button
+                type="submit"
+                disabled={createmutation.isPending || updatemutation.isPending}
+                className="mt-5 bg-orange-500 hover:bg-orange-600 py-2 flex justify-center items-center gap-2 rounded-lg w-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {createmutation.isPending || updatemutation.isPending ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    {type === "edit" ? "Saving..." : "Adding..."}
+                  </>
+                ) : (
+                  <>
+                    {type === "edit" ? <Bookmark /> : <LayersPlus />}
+                    {type === "edit" ? "Save changes" : "Add variant"}
+                  </>
+                )}
+              </button>
+            </form>
           </div>
         </div>
       )}
