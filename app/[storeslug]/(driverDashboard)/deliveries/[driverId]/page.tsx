@@ -151,7 +151,7 @@ const DeliveriesPage = () => {
 
   async function handleUpdateStatus(status: string, orderId: string) {
     try {
-      await updateStatus({ status, orderId });
+      await updateStatus({ status, orderId, storeslug });
       toast.success("Delivery status updated!");
       fetchDeliveries();
     } catch (error) {
