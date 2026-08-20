@@ -26,12 +26,13 @@ const LoginContent = () => {
     if (!redirectParam) return "/";
     return redirectParam.startsWith("/") ? redirectParam : `/${redirectParam}`;
   };
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<SignInForm>({
-    resolver: zodResolver(LoginSchema), // ← FIXED: Added resolver
+    resolver: zodResolver(LoginSchema),
     defaultValues: {
       email: "",
       password: "",
@@ -48,7 +49,7 @@ const LoginContent = () => {
             toast.error("An error occurred");
           },
           onSuccess: () => {
-            toast.success("Loged in successfully");
+            toast.success("Logged in successfully");
             router.push(targetPath);
             router.refresh();
           },
@@ -70,23 +71,28 @@ const LoginContent = () => {
       </div>
 
       {/* Right side - Login Form */}
-      <div className="flex items-center justify-center px-20">
+      <div className="flex items-center justify-center px-20 bg-white">
         <div className="w-full max-w-md">
           <span className="inline-block bg-orange-100 rounded-full p-2">
             <UsersRound className="w-12 h-12 text-orange-500" />
           </span>
-          <h1 className="text-4xl font-semibold mt-5">Welcome Back</h1>
-          <p className="py-6 text-xs text-gray-400">
+          <h1 className="text-4xl font-semibold mt-5 text-gray-800">
+            Welcome Back
+          </h1>
+          <p className="py-6 text-xs text-gray-500">
             Log in to your Xrow account
           </p>
 
           <form
             onSubmit={handleSubmit(handleLogIn)}
-            className="border-t pt-5 border-gray-300"
+            className="border-t pt-5 border-gray-200"
           >
             {/* Email */}
             <div className="flex flex-col">
-              <label htmlFor="email" className="my-2 text-xs text-gray-400">
+              <label
+                htmlFor="email"
+                className="my-2 text-xs text-gray-500 font-medium"
+              >
                 Your email
               </label>
               <input
@@ -95,7 +101,7 @@ const LoginContent = () => {
                 placeholder="example@gmail.com"
                 disabled={isSubmitting}
                 type="email"
-                className="px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-800 placeholder-gray-400"
               />
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">
@@ -106,7 +112,10 @@ const LoginContent = () => {
 
             {/* Password */}
             <div className="flex flex-col">
-              <label htmlFor="password" className="my-2 text-xs text-gray-400">
+              <label
+                htmlFor="password"
+                className="my-2 text-xs text-gray-500 font-medium"
+              >
                 Your password
               </label>
               <div className="relative">
@@ -116,7 +125,7 @@ const LoginContent = () => {
                   placeholder="••••••••"
                   disabled={isSubmitting}
                   type={showPassword ? "text" : "password"}
-                  className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent pr-12"
+                  className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent pr-12 text-gray-800 placeholder-gray-400"
                 />
                 <button
                   type="button"
@@ -151,13 +160,13 @@ const LoginContent = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full mt-5 bg-orange-500 text-white py-3 px-4 rounded-lg hover:bg-orange-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="w-full mt-5 bg-orange-500 text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
               {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
 
             {/* Footer */}
-            <p className="mt-4 text-center text-sm text-gray-600">
+            <p className="mt-4 text-center text-sm text-gray-500">
               Don't have an account?
               <a
                 href="/sign-up"

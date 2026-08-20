@@ -11,18 +11,29 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import CustomInput from "./CustomeInput";
 import { useProduct } from "@/store/product-store";
+import {
+  QueryObserverResult,
+  RefetchOptions,
+  useQuery,
+} from "@tanstack/react-query";
+import { addNewOptionToProduct } from "@/app/actions/product-actions";
+import toast from "react-hot-toast";
 
 interface ProductFormProps {
   intialData?: any;
   type: string;
   handleSubmit: () => void;
   isSubmitting: boolean;
+  refetch?:
+    | ((options?: RefetchOptions | undefined) => Promise<QueryObserverResult>)
+    | any;
 }
 
 const ProductForm = ({
   intialData,
   type,
   handleSubmit,
+  refetch,
   isSubmitting,
 }: ProductFormProps) => {
   const {
@@ -40,10 +51,11 @@ const ProductForm = ({
     currentProductOption,
     setCurrentProductOption,
     handleAddProductOption,
-    handleRemoveProductOption,
-    handleRemoveValueField,
   } = useProduct();
-
+  const [newOptionValue, setNewOptionValue] = useState({
+    name: "",
+    value: [""],
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize form with intialData when editing
@@ -52,7 +64,6 @@ const ProductForm = ({
       const options =
         intialData.options?.map((opt: any) => ({
           ...opt,
-          // Ensure value is always an array
           value: Array.isArray(opt.value)
             ? opt.value
             : Array.isArray(opt.values)
@@ -68,7 +79,6 @@ const ProductForm = ({
         status: intialData.status || "draft",
         featured: intialData.featured || false,
         brand: intialData.brand || "",
-
         images: intialData.images || [],
         options: options || [],
         variants:
@@ -103,19 +113,28 @@ const ProductForm = ({
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [fetchCategories]);
+
+  const handleAddNewOptionValue = async () => {
+    const res = await addNewOptionToProduct(intialData.id, newOptionValue);
+    if (res.success) {
+      toast.success("Option added");
+      setNewOptionValue({ name: "", value: [""] });
+      refetch();
+    }
+  };
 
   const displayVariants = productForm.variants;
 
   return (
     <div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 mb-6">
         {type === "add" ? (
           <PackagePlus className="text-orange-500" />
         ) : (
           <Edit className="text-orange-500" />
         )}
-        <span className="text-lg">
+        <span className="text-lg font-semibold text-gray-800">
           {type === "add" ? "Add New Product" : "Edit Product"}
         </span>
       </div>
@@ -123,8 +142,8 @@ const ProductForm = ({
       <div className="grid lg:grid-cols-1 xl:grid-cols-[700px_1fr] gap-6">
         <div className="flex flex-col gap-5">
           {/* General Information */}
-          <div className="mt-3 bg-white/5 rounded-lg p-5 flex flex-col gap-3">
-            <h1 className="font-semibold">General Information</h1>
+          <div className="mt-3 bg-white rounded-lg border border-gray-200 p-5 shadow-sm flex flex-col gap-3">
+            <h1 className="font-semibold text-gray-800">General Information</h1>
 
             <CustomInput
               label="Product Name"
@@ -140,12 +159,12 @@ const ProductForm = ({
             <div className="flex flex-col gap-1">
               <label
                 htmlFor="description"
-                className="text-[14px] text-gray-400"
+                className="text-[14px] text-gray-600"
               >
                 Product Description
               </label>
               <textarea
-                className="bg-white/20 px-5 py-2 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                className="bg-gray-50 px-5 py-2 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 border border-gray-200"
                 value={productForm.description}
                 onChange={(e) =>
                   setProductForm({
@@ -159,7 +178,7 @@ const ProductForm = ({
             </div>
 
             <select
-              className="bg-white/20 px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-orange-500"
+              className="bg-gray-50 px-4 py-2 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 border border-gray-200"
               value={productForm.categoryId}
               onChange={(e) =>
                 setProductForm({
@@ -168,31 +187,31 @@ const ProductForm = ({
                 })
               }
             >
-              <option className="bg-black" value="">
+              <option className="bg-white" value="">
                 Select Category
               </option>
               {categories.map((cat: any) => (
-                <option className="bg-black" key={cat?.id} value={cat?.id}>
+                <option className="bg-white" key={cat?.id} value={cat?.id}>
                   {cat.name}
                 </option>
               ))}
             </select>
 
             <select
-              className="bg-white/20 px-5 py-2 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+              className="bg-gray-50 px-5 py-2 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 border border-gray-200"
               name="status"
               value={productForm.status}
               onChange={(e) =>
                 setProductForm({ ...productForm, status: e.target.value })
               }
             >
-              <option className="bg-black" value="draft">
+              <option className="bg-white" value="draft">
                 Draft
               </option>
-              <option className="bg-black" value="active">
+              <option className="bg-white" value="active">
                 Active
               </option>
-              <option className="bg-black" value="archived">
+              <option className="bg-white" value="archived">
                 Archived
               </option>
             </select>
@@ -210,6 +229,7 @@ const ProductForm = ({
               placeholder="Dior, Nike, LYS"
               required
             />
+
             <div className="flex items-center gap-3 mt-4">
               <input
                 type="checkbox"
@@ -223,42 +243,64 @@ const ProductForm = ({
               />
               <label
                 htmlFor="isDefault"
-                className="text-sm text-gray-300 cursor-pointer"
+                className="text-sm text-gray-600 cursor-pointer"
               >
                 Add to featured products
               </label>
             </div>
           </div>
-          <h1 className="font-semibold mb-4">Options</h1>
 
-          {/* Variant Options Section - Dedicated space for options */}
-          <div className="bg-white/5 rounded-lg p-5 mb-5">
+          <h1 className="font-semibold text-gray-800 mb-4">Options</h1>
+
+          {/* Variant Options Section */}
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm mb-5">
             <div className="grid grid-cols-1 gap-3">
               <CustomInput
                 label="Option Name"
                 name="optionName"
-                value={currentProductOption.name}
-                onChange={(e) =>
-                  setCurrentProductOption({
-                    ...currentProductOption,
-                    name: e.target.value,
-                  })
+                value={
+                  type === "add"
+                    ? currentProductOption.name
+                    : newOptionValue.name
                 }
-                placeholder="e.g., Color,Siz,Material"
+                onChange={(e) =>
+                  type === "add"
+                    ? setCurrentProductOption({
+                        ...currentProductOption,
+                        name: e.target.value,
+                      })
+                    : setNewOptionValue({
+                        ...newOptionValue,
+                        name: e.target.value,
+                      })
+                }
+                placeholder="e.g., Color, Size, Material"
               />
-              {currentProductOption.value.map((val, i) => (
+              {(type === "add"
+                ? currentProductOption.value
+                : newOptionValue.value
+              ).map((val, i) => (
                 <div key={i}>
                   <CustomInput
                     label={`Option ${i + 1} value`}
                     name="optionValue"
                     value={val}
                     onChange={(e) => {
-                      const newValues = [...currentProductOption.value];
-                      newValues[i] = e.target.value;
-                      setCurrentProductOption({
-                        ...currentProductOption,
-                        value: newValues,
-                      });
+                      if (type === "add") {
+                        const newValues = [...currentProductOption.value];
+                        newValues[i] = e.target.value;
+                        setCurrentProductOption({
+                          ...currentProductOption,
+                          value: newValues,
+                        });
+                      } else {
+                        const newValues = [...newOptionValue.value];
+                        newValues[i] = e.target.value;
+                        setNewOptionValue({
+                          ...newOptionValue,
+                          value: newValues,
+                        });
+                      }
                     }}
                     placeholder={`Value ${i + 1}`}
                   />
@@ -267,58 +309,70 @@ const ProductForm = ({
             </div>
             <button
               onClick={() => {
-                setCurrentProductOption({
-                  ...currentProductOption,
-                  value: [...currentProductOption.value, ""],
-                });
+                type === "add"
+                  ? setCurrentProductOption({
+                      ...currentProductOption,
+                      value: [...currentProductOption.value, ""],
+                    })
+                  : setNewOptionValue({
+                      ...newOptionValue,
+                      value: [...newOptionValue.value, ""],
+                    });
               }}
-              className="mt-2 text-orange-400 hover:text-orange-300 text-sm flex items-center gap-1"
+              className="mt-2 text-orange-500 hover:text-orange-600 text-sm flex items-center gap-1"
             >
               <Plus size={16} /> Add Value
             </button>
             <button
-              onClick={handleAddProductOption}
-              className="mt-3 bg-orange-500 hover:bg-orange-600 py-2 flex justify-center items-center gap-2 rounded-lg w-full transition-colors"
+              onClick={
+                type === "add"
+                  ? handleAddProductOption
+                  : handleAddNewOptionValue
+              }
+              className="mt-3 bg-orange-500 hover:bg-orange-600 text-white py-2 flex justify-center items-center gap-2 rounded-lg w-full transition-colors"
             >
               <LayersPlus />
               Add Option
             </button>
           </div>
-          <div className="bg-white/5 rounded-lg p-4">
-            <h2 className="font-semibold mb-3">
+
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+            <h2 className="font-semibold text-gray-800 mb-3">
               Added options ({productForm.options.length})
             </h2>
             {productForm.options.map((opt: any, index: number) => (
               <div
                 key={index}
-                className="flex items-center justify-between bg-white/10 p-3 rounded-lg mt-2"
+                className="flex items-center justify-between bg-gray-50 p-3 rounded-lg mt-2 border border-gray-100"
               >
                 <div className="grid grid-cols-2 gap-4 flex-1">
                   <div>
-                    <span className="text-xs text-gray-400">Option Name</span>
-                    <p className="text-white">{opt.name}</p>
+                    <span className="text-xs text-gray-500">Option Name</span>
+                    <p className="text-gray-800 font-medium">{opt.name}</p>
                   </div>
                   <div>
-                    <span className="text-xs text-gray-400">Values</span>
-                    <p className="text-white">
-                      {opt.value?.map((val: any) => (
-                        <p>{val}</p>
+                    <span className="text-xs text-gray-500">Values</span>
+                    <p className="text-gray-800">
+                      {opt?.value?.map((val: any, i: number) => (
+                        <p key={i}>{val}</p>
                       ))}
                     </p>
                   </div>
                 </div>
-                <button className="ml-3 p-2 hover:bg-red-500/20 rounded-lg text-red-400">
-                  <X size={20} />
-                </button>
+                {type === "add" && (
+                  <button className="ml-3 p-2 hover:bg-red-50 rounded-lg text-red-400 hover:text-red-600">
+                    <X size={20} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
+
           {/* Variant Section */}
           {type === "add" && (
-            <div className="bg-white/5 rounded-lg p-5">
-              {/* Variant Form */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
               <div className="mt-5">
-                <div className="bg-white/5 rounded-lg p-5">
+                <div className="bg-gray-50 rounded-lg p-5 border border-gray-100">
                   <div className="grid gap-5 md:grid-cols-3 grid-cols-2">
                     <CustomInput
                       label="SKU"
@@ -391,7 +445,6 @@ const ProductForm = ({
                   </div>
                   {(intialData?.options || productForm.options).map(
                     (opt: any, index: number) => {
-                      // Safely get the values array
                       const optionValues = Array.isArray(opt.value)
                         ? opt.value
                         : Array.isArray(opt.values)
@@ -404,18 +457,13 @@ const ProductForm = ({
                         <div key={opt.id || index} className="space-y-1.5">
                           <label
                             htmlFor={`option-${opt.id || index}`}
-                            className="block text-sm font-medium mt-3 text-white/90"
+                            className="block text-sm font-medium mt-3 text-gray-700"
                           >
                             {opt.name}
                           </label>
                           <select
                             id={`option-${opt.id || index}`}
-                            className="w-full bg-white/10 backdrop-blur-sm border border-white/20 
-                 px-4 py-2.5 rounded-xl text-white 
-                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                 hover:bg-white/15 transition-all duration-200
-                 appearance-none cursor-pointer
-                 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:bg-gray-100 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             value={currentVariant.optionValues?.[index] || ""}
                             onChange={(e) => {
                               const values = [
@@ -428,7 +476,7 @@ const ProductForm = ({
                               });
                             }}
                           >
-                            <option value="" className="bg-gray-900 text-white">
+                            <option value="" className="bg-white text-gray-800">
                               Select {opt.name}
                             </option>
                             {optionValues.map((val: any, idx: number) => {
@@ -440,7 +488,7 @@ const ProductForm = ({
                                 <option
                                   key={`${opt.id || index}-${idx}`}
                                   value={displayValue}
-                                  className="bg-gray-900 text-white py-1"
+                                  className="bg-white text-gray-800 py-1"
                                 >
                                   {displayValue}
                                 </option>
@@ -458,7 +506,7 @@ const ProductForm = ({
                 onClick={() => {
                   handleAddVariant();
                 }}
-                className="mt-5 bg-orange-500 hover:bg-orange-600 py-2 flex justify-center items-center gap-2 rounded-lg w-full transition-colors"
+                className="mt-5 bg-orange-500 hover:bg-orange-600 text-white py-2 flex justify-center items-center gap-2 rounded-lg w-full transition-colors"
               >
                 <LayersPlus />
                 Add Variant
@@ -468,27 +516,33 @@ const ProductForm = ({
 
           {/* Display Added Variants */}
           {type === "add" && (
-            <div className="bg-white/5 rounded-lg p-4">
-              <h2 className="font-semibold mb-3">
+            <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+              <h2 className="font-semibold text-gray-800 mb-3">
                 Added Variants ({displayVariants.length})
               </h2>
               {displayVariants.map((variant: any, index: number) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between bg-white/10 p-3 rounded-lg mt-2"
+                  className="flex items-center justify-between bg-gray-50 p-3 rounded-lg mt-2 border border-gray-100"
                 >
                   <div className="grid grid-cols-3 gap-4 flex-1">
                     <div>
-                      <span className="text-xs text-gray-400">SKU</span>
-                      <p className="text-white">{variant.sku || "N/A"}</p>
+                      <span className="text-xs text-gray-500">SKU</span>
+                      <p className="text-gray-800 font-medium">
+                        {variant.sku || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-xs text-gray-400">Price</span>
-                      <p className="text-white">${variant.price || "0.00"}</p>
+                      <span className="text-xs text-gray-500">Price</span>
+                      <p className="text-gray-800 font-medium">
+                        ${variant.price || "0.00"}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-xs text-gray-400">Stock</span>
-                      <p className="text-white">{variant.stock || "0"}</p>
+                      <span className="text-xs text-gray-500">Stock</span>
+                      <p className="text-gray-800 font-medium">
+                        {variant.stock || "0"}
+                      </p>
                     </div>
                   </div>
                   <button
@@ -496,7 +550,7 @@ const ProductForm = ({
                       e.stopPropagation();
                       removeVariant(index);
                     }}
-                    className="ml-3 p-2 hover:bg-red-500/20 rounded-lg text-red-400"
+                    className="ml-3 p-2 hover:bg-red-50 rounded-lg text-red-400 hover:text-red-600"
                   >
                     <X size={20} />
                   </button>
@@ -507,8 +561,8 @@ const ProductForm = ({
         </div>
 
         {/* Right Sidebar - Summary */}
-        <div className="mt-3 bg-white/5 rounded-lg p-5">
-          <h1 className="font-semibold mb-4">Upload Image</h1>
+        <div className="mt-3 bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <h1 className="font-semibold text-gray-800 mb-4">Upload Image</h1>
 
           {/* Image Grid */}
           {productForm.images.length > 0 && (
@@ -541,8 +595,8 @@ const ProductForm = ({
             className={`border-2 border-dashed my-5 rounded-lg p-6 text-center transition-all cursor-pointer
             ${
               uploading
-                ? "border-gray-400 bg-gray-500/20"
-                : "border-gray-600 hover:border-orange-500 hover:bg-orange-500/5"
+                ? "border-gray-300 bg-gray-50"
+                : "border-gray-300 hover:border-orange-400 hover:bg-orange-50"
             }`}
             onClick={() => !uploading && fileInputRef.current?.click()}
           >
@@ -565,7 +619,7 @@ const ProductForm = ({
               <ImagePlus
                 className={`w-8 h-8 ${uploading ? "text-gray-400 animate-pulse" : "text-gray-400"}`}
               />
-              <p className="text-xs text-gray-300">
+              <p className="text-xs text-gray-500">
                 {uploading ? (
                   <span className="flex items-center gap-2">
                     <span className="inline-block w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></span>
@@ -575,7 +629,7 @@ const ProductForm = ({
                   "Click to upload or drag and drop"
                 )}
               </p>
-              <p className="text-gray-500 text-xs">PNG, JPG, GIF up to 10MB</p>
+              <p className="text-gray-400 text-xs">PNG, JPG, GIF up to 10MB</p>
             </div>
           </div>
 
@@ -590,7 +644,7 @@ const ProductForm = ({
       <button
         onClick={handleSubmit}
         disabled={isSubmitting || uploading}
-        className="mt-4 bg-orange-500 hover:bg-orange-600 py-2 flex justify-center items-center gap-2 rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="mt-4 bg-orange-500 hover:bg-orange-600 text-white py-2 flex justify-center items-center gap-2 rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {isSubmitting || uploading ? (
           <>

@@ -143,21 +143,25 @@ const AccountPage = () => {
 
   return (
     <div>
-      <h1 className="text-3xl">Profile</h1>
+      <h1 className="text-3xl font-bold text-gray-800">Profile</h1>
+
       <div className="flex items-center gap-5 mt-5">
         <button
           onClick={() => setOpenedTab("USERDATA")}
-          className={`text-lg font-semibold shadow shadow-gray-500 rounded-full py-1 px-5 transition-all duration-300 ${
-            openedTab === "USERDATA" && "bg-orange-500 shadow-white text-white"
+          className={`text-lg font-semibold shadow-sm rounded-full py-1 px-5 transition-all duration-300 ${
+            openedTab === "USERDATA"
+              ? "bg-orange-500 text-white shadow-orange-200"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
           }`}
         >
           User data
         </button>
         <button
           onClick={() => setOpenedTab("ORDERHISTORY")}
-          className={`text-lg font-semibold shadow shadow-gray-500 rounded-full py-1 px-5 transition-all duration-300 ${
-            openedTab === "ORDERHISTORY" &&
-            "bg-orange-500 shadow-white text-white"
+          className={`text-lg font-semibold shadow-sm rounded-full py-1 px-5 transition-all duration-300 ${
+            openedTab === "ORDERHISTORY"
+              ? "bg-orange-500 text-white shadow-orange-200"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
           }`}
         >
           Order history
@@ -166,23 +170,28 @@ const AccountPage = () => {
 
       {openedTab === "USERDATA" && data && (
         <div>
-          <div className="bg-white/10 mt-5 rounded-2xl p-5">
-            <h1 className="text-lg mb-5">Personal Data</h1>
+          <div className="bg-white mt-5 rounded-2xl p-5 border border-gray-200 shadow-sm">
+            <h1 className="text-lg font-semibold text-gray-800 mb-5">
+              Personal Data
+            </h1>
 
             <div className="flex items-center justify-between mb-4">
               <p className="text-[16px] flex items-center gap-2">
                 <span className="text-gray-500 mb-1">
                   <User size={20} />
                 </span>
-                <span className="text-gray-500">Name:</span>
+                <span className="text-gray-600">Name:</span>
                 {editingField === "name" ? (
                   <input
                     value={name}
-                    className="border border-gray-500 px-4 py-1 rounded-lg"
+                    className="border border-gray-300 px-4 py-1 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     onChange={(e) => setName(e.target.value)}
                   />
                 ) : (
-                  <span> {data.name}</span>
+                  <span className="text-gray-800 font-medium">
+                    {" "}
+                    {data.name}
+                  </span>
                 )}
               </p>
               <button
@@ -209,16 +218,19 @@ const AccountPage = () => {
                 <span className="text-gray-500 mb-1">
                   <Mail size={20} />
                 </span>
-                <span className="text-gray-500">Email:</span>
+                <span className="text-gray-600">Email:</span>
                 {editingField === "email" ? (
                   <input
                     value={email}
                     type="email"
-                    className="border border-gray-500 px-4 py-1 rounded-lg"
+                    className="border border-gray-300 px-4 py-1 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 ) : (
-                  <span> {data.email}</span>
+                  <span className="text-gray-800 font-medium">
+                    {" "}
+                    {data.email}
+                  </span>
                 )}
               </p>
               <button
@@ -241,18 +253,24 @@ const AccountPage = () => {
             </div>
           </div>
 
-          <div className="bg-white/10 mt-5 rounded-2xl p-5">
-            <h1 className="text-lg">Login and password</h1>
-            <p className="mb-3 mt-10 text-orange-500">Change password</p>
+          <div className="bg-white mt-5 rounded-2xl p-5 border border-gray-200 shadow-sm">
+            <h1 className="text-lg font-semibold text-gray-800">
+              Login and password
+            </h1>
+            <p className="mb-3 mt-10 text-orange-500 font-medium">
+              Change password
+            </p>
+
             <div className="flex items-center justify-between mb-4">
               <p className="text-[16px] flex items-center gap-2">
                 <span className="text-gray-500 mb-1">
                   <Fingerprint size={20} />
                 </span>
-                <span className="text-gray-500">Current password:</span>
+                <span className="text-gray-600">Current password:</span>
                 <input
                   value={passWords.currentPassword}
-                  className="border border-gray-500 px-4 py-1 rounded-lg"
+                  type="password"
+                  className="border border-gray-300 px-4 py-1 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   onChange={(e) =>
                     setPassWords({
                       ...passWords,
@@ -268,15 +286,17 @@ const AccountPage = () => {
                 <Bookmark /> Save
               </button>
             </div>
+
             <div className="flex items-center justify-between mb-4">
               <p className="text-[16px] flex items-center gap-2">
                 <span className="text-gray-500 mb-1">
                   <Fingerprint size={20} />
                 </span>
-                <span className="text-gray-500">New password:</span>
+                <span className="text-gray-600">New password:</span>
                 <input
                   value={passWords.newPassWord}
-                  className="border border-gray-500 px-4 py-1 rounded-lg"
+                  type="password"
+                  className="border border-gray-300 px-4 py-1 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   onChange={(e) =>
                     setPassWords({
                       ...passWords,
@@ -293,41 +313,47 @@ const AccountPage = () => {
       {openedTab === "ORDERHISTORY" && (
         <div className="mt-5">
           <select
-            className="bg-white/20 px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-orange-500"
+            className="bg-gray-50 px-4 py-2 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 border border-gray-200"
             value={selectStatus}
             onChange={(e) => setSelectStatus(e.target.value)}
           >
-            <option className="bg-black" value="">
+            <option className="bg-white" value="">
               Filter
             </option>
             {filteredStatuses.map((sta: string, i: number) => (
-              <option className="bg-black" key={i} value={sta}>
+              <option className="bg-white" key={i} value={sta}>
                 {sta}
               </option>
             ))}
           </select>
+
           <div className="mt-5 grid grid-cols-1 gap-3">
             {filteredData.map((order: Order) => (
-              <div key={order.id} className="bg-white/10 p-5 rounded-lg">
+              <div
+                key={order.id}
+                className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm"
+              >
                 <div className="flex items-center gap-5">
-                  <h1 className="font-semibold">AFN {order.total}</h1>
+                  <h1 className="font-semibold text-gray-800">
+                    AFN {order.total}
+                  </h1>
                   <p
                     className={`px-3 w-fit text-xs py-px rounded-full ${badgeColorApplier(order.status)}`}
                   >
                     {order.status}
                   </p>
                 </div>
-                <p className="text-gray-400 text-xs">#{order.id.slice(0, 7)}</p>
-                <p className="text-gray-400 text-xs">
+                <p className="text-gray-500 text-xs">#{order.id.slice(0, 7)}</p>
+                <p className="text-gray-500 text-xs">
                   Order date:
-                  <span className="text-orange-500">
+                  <span className="text-orange-500 font-medium">
                     {new Date(order.createdAt).toLocaleDateString()}
                   </span>
                 </p>
                 <div className="mt-5 flex flex-col gap-3">
                   {order.items.map((item: OrderItem) => (
                     <div key={item.id}>
-                      <h1 className="font-semibold">
+                      <h1 className="font-semibold text-gray-800">
                         {item?.variant?.product?.name}
                       </h1>
                     </div>

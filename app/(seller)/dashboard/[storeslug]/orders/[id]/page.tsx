@@ -140,7 +140,6 @@ const OrderDetailPage = () => {
     enabled: !!orderId,
   });
 
-  // Helper function to safely format date
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";
     try {
@@ -156,19 +155,16 @@ const OrderDetailPage = () => {
     }
   };
 
-  // Helper function to format currency
   const formatCurrency = (amount: string | number | null | undefined) => {
     if (amount === null || amount === undefined) return "0.00";
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
     return isNaN(num) ? "0.00" : num.toFixed(2);
   };
 
-  // Get shipping address from either address object or shipping fields
   const getShippingAddress = () => {
     if (data?.address) {
       return data.address;
     }
-    // Fallback to shipping fields from order
     if (data?.shippingStreetAddress) {
       return {
         streetAddress: data.shippingStreetAddress || "",
@@ -183,7 +179,6 @@ const OrderDetailPage = () => {
     return null;
   };
 
-  // Get option values display text
   const getOptionValuesText = (optionValues: OptionValue[]) => {
     if (!optionValues || optionValues.length === 0) return null;
     return optionValues
@@ -192,25 +187,23 @@ const OrderDetailPage = () => {
       .join(" • ");
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <div className="inline-block w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-        <span className="mt-3 text-gray-400">Loading order details...</span>
+        <span className="mt-3 text-gray-500">Loading order details...</span>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <div className="text-red-500 mb-2">Error loading order</div>
-        <div className="text-gray-400 text-sm">{(error as Error).message}</div>
+        <div className="text-gray-500 text-sm">{(error as Error).message}</div>
         <button
           onClick={() => refetch()}
-          className="mt-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg transition-colors"
+          className="mt-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
         >
           Try Again
         </button>
@@ -218,11 +211,10 @@ const OrderDetailPage = () => {
     );
   }
 
-  // No data state
   if (!data) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-400">Order not found</div>
+        <div className="text-gray-500">Order not found</div>
       </div>
     );
   }
@@ -233,7 +225,7 @@ const OrderDetailPage = () => {
     <div>
       {/* Header */}
       <div className="flex items-center gap-5 flex-wrap">
-        <h1 className="flex gap-2 text-2xl font-semibold text-gray-400">
+        <h1 className="flex gap-2 text-2xl font-semibold text-gray-700">
           <span>Order</span>
           <span className="text-orange-500">#{data.id.slice(0, 10)}</span>
         </h1>
@@ -246,7 +238,7 @@ const OrderDetailPage = () => {
         </p>
         <div className="text-sm flex items-center gap-2">
           <Calendar size={17} className="text-gray-400" />
-          <span className="text-orange-400">{formatDate(data.createdAt)}</span>
+          <span className="text-gray-600">{formatDate(data.createdAt)}</span>
         </div>
       </div>
 
@@ -255,13 +247,12 @@ const OrderDetailPage = () => {
         <div className="flex flex-col gap-5">
           {/* Order Items */}
           <div className="flex flex-col gap-4">
-            <h2 className="text-lg font-semibold text-gray-300 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
               <Package size={20} />
               Order Items ({data.items?.length || 0})
             </h2>
 
             {data.items?.map((item, index) => {
-              // Get the primary image or first image
               const productImage =
                 item.variant?.product?.images?.find((img) => img.isPrimary) ||
                 item.variant?.product?.images?.[0];
@@ -273,13 +264,12 @@ const OrderDetailPage = () => {
               return (
                 <div
                   key={item.id || index}
-                  className="bg-gray-900/50 p-4 rounded-lg border border-gray-800 
-                           hover:border-gray-700 transition-colors"
+                  className="bg-white p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors shadow-sm"
                 >
                   <div className="flex flex-col sm:flex-row gap-4">
                     {/* Product Image */}
                     {productImage?.url && (
-                      <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-800">
+                      <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
                         <img
                           src={productImage.url}
                           alt={item.variant?.product?.name || "Product"}
@@ -290,35 +280,35 @@ const OrderDetailPage = () => {
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-white truncate">
+                      <h3 className="font-medium text-gray-800 truncate">
                         {item.variant?.product?.name || "Unknown Product"}
                       </h3>
 
                       {optionValuesText && (
-                        <p className="text-sm text-gray-400 mt-1">
+                        <p className="text-sm text-gray-500 mt-1">
                           {optionValuesText}
                         </p>
                       )}
 
                       {item.variant?.sku && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-400 mt-1">
                           SKU: {item.variant.sku}
                         </p>
                       )}
 
                       <div className="flex items-center gap-3 mt-2 flex-wrap">
-                        <span className="text-green-400">
+                        <span className="text-green-600 font-medium">
                           AFN {formatCurrency(item.priceAtPurchase)}
                         </span>
                         {item.variant?.comparePriceAt &&
                           Number(item.variant.comparePriceAt) >
                             Number(item.priceAtPurchase) && (
-                            <span className="text-xs line-through text-gray-500">
+                            <span className="text-xs line-through text-gray-400">
                               AFN {formatCurrency(item.variant.comparePriceAt)}
                             </span>
                           )}
-                        <span className="text-gray-400">× {item.quantity}</span>
-                        <span className="text-orange-400 font-semibold">
+                        <span className="text-gray-500">× {item.quantity}</span>
+                        <span className="text-orange-500 font-semibold">
                           AFN{" "}
                           {formatCurrency(
                             Number(item.priceAtPurchase) *
@@ -334,21 +324,23 @@ const OrderDetailPage = () => {
           </div>
 
           {/* Order Summary */}
-          <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
-            <h2 className="pb-2 font-semibold text-lg text-gray-300">
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <h2 className="pb-2 font-semibold text-lg text-gray-700">
               Order Summary
             </h2>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <p className="text-gray-400">Sub Total</p>
-                <p>AFN {formatCurrency(data.subtotal)}</p>
+                <p className="text-gray-500">Sub Total</p>
+                <p className="text-gray-700">
+                  AFN {formatCurrency(data.subtotal)}
+                </p>
               </div>
               <div className="flex justify-between items-center">
-                <p className="text-gray-400">Shipping</p>
-                <p className="text-green-400">Free</p>
+                <p className="text-gray-500">Shipping</p>
+                <p className="text-green-600">Free</p>
               </div>
-              <div className="flex justify-between items-center pt-3 border-t border-gray-700">
-                <p className="text-gray-400 font-semibold">Total</p>
+              <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                <p className="text-gray-600 font-semibold">Total</p>
                 <p>
                   <span className="text-orange-500 font-bold text-lg">
                     AFN {formatCurrency(data.total)}
@@ -362,39 +354,41 @@ const OrderDetailPage = () => {
         {/* Right Column - Customer Information */}
         <div className="flex flex-col gap-5">
           {/* Customer Card */}
-          <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
-            <h2 className="font-semibold text-lg text-gray-300 flex items-center gap-2 mb-4">
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <h2 className="font-semibold text-lg text-gray-700 flex items-center gap-2 mb-4">
               <User size={20} />
               Customer
             </h2>
 
             {/* Customer Name */}
-            <div className="flex items-center gap-3 pb-3 border-b border-gray-700">
+            <div className="flex items-center gap-3 pb-3 border-b border-gray-200">
               <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
                 {data?.user?.name?.slice(0, 1).toUpperCase() || "U"}
               </div>
               <div>
-                <p className="font-medium">{data?.user?.name || "Unknown"}</p>
-                <p className="text-sm text-gray-400">
+                <p className="font-medium text-gray-800">
+                  {data?.user?.name || "Unknown"}
+                </p>
+                <p className="text-sm text-gray-500">
                   {data?.user?.email || "No email"}
                 </p>
               </div>
             </div>
 
             {/* Contact Info */}
-            <div className="py-3 border-b border-gray-700">
-              <p className="text-sm font-semibold text-gray-400 mb-2">
+            <div className="py-3 border-b border-gray-200">
+              <p className="text-sm font-semibold text-gray-500 mb-2">
                 Contact
               </p>
               <div className="flex items-center gap-2 text-sm">
                 <Mail size={16} className="text-orange-400" />
-                <span className="text-gray-300">
+                <span className="text-gray-600">
                   {shippingAddress?.email || data?.user?.email || "N/A"}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-sm mt-1">
-                <Phone size={16} className="text-green-400" />
-                <span className="text-gray-300">
+                <Phone size={16} className="text-green-500" />
+                <span className="text-gray-600">
                   {shippingAddress?.phone || data?.shippingPhone || "N/A"}
                 </span>
               </div>
@@ -403,8 +397,8 @@ const OrderDetailPage = () => {
             {/* Order Stats */}
             <div className="py-3">
               <div className="flex items-center gap-2 text-sm">
-                <ReceiptText size={16} className="text-blue-400" />
-                <span className="text-gray-300">
+                <ReceiptText size={16} className="text-blue-500" />
+                <span className="text-gray-600">
                   {data.items?.length || 0} Item
                   {(data.items?.length || 0) > 1 ? "s" : ""}
                 </span>
@@ -413,8 +407,8 @@ const OrderDetailPage = () => {
           </div>
 
           {/* Shipping Address Card */}
-          <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
-            <h2 className="font-semibold text-lg text-gray-300 flex items-center gap-2 mb-4">
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <h2 className="font-semibold text-lg text-gray-700 flex items-center gap-2 mb-4">
               <MapPin size={20} />
               Shipping Address
             </h2>
@@ -422,32 +416,32 @@ const OrderDetailPage = () => {
             {shippingAddress ? (
               <div className="space-y-2 text-sm">
                 {shippingAddress.fullName && (
-                  <p className="font-medium text-white">
+                  <p className="font-medium text-gray-800">
                     {shippingAddress.fullName}
                   </p>
                 )}
-                <p className="text-gray-300">{shippingAddress.streetAddress}</p>
+                <p className="text-gray-600">{shippingAddress.streetAddress}</p>
                 {shippingAddress.city && (
-                  <p className="text-gray-300">{shippingAddress.city}</p>
+                  <p className="text-gray-600">{shippingAddress.city}</p>
                 )}
                 {shippingAddress.country && (
-                  <p className="text-gray-300">{shippingAddress.country}</p>
+                  <p className="text-gray-600">{shippingAddress.country}</p>
                 )}
                 {shippingAddress.postalCode && (
-                  <p className="text-gray-400">
+                  <p className="text-gray-500">
                     Postal: {shippingAddress.postalCode}
                   </p>
                 )}
                 {shippingAddress.phone && (
-                  <p className="text-gray-400">
+                  <p className="text-gray-500">
                     Phone: {shippingAddress.phone}
                   </p>
                 )}
               </div>
             ) : (
-              <div className="text-gray-400 text-sm">
+              <div className="text-gray-500 text-sm">
                 <p>No shipping address available</p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   Order ID: {data.id.slice(0, 8)}
                 </p>
               </div>

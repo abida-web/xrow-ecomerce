@@ -8,6 +8,7 @@ import {
   organization,
   productImages,
   productOptions,
+  productOptionValues,
   products,
   user,
   variants,
@@ -38,23 +39,54 @@ export const getProducts = async (
   search?: string,
   page: number = 1,
   limit: number = 10,
+  sortBy?: string,
+  selectStatus?: string,
 ) => {
   let offset = (page - 1) * limit;
   const organizationData = await getOrganizationBySlug(storeslug);
   if (!organizationData) {
     throw new Error("Oranization doesn't exists");
   }
+  let orderByClause;
+  if (sortBy === "newest") {
+    orderByClause = [desc(products.createdAt), asc(products.id)];
+  } else if (sortBy === "low") {
+    // Sort by the cheapest variant price for each product
+    orderByClause = [
+      asc(
+        sql`(SELECT MIN(variants.price) FROM variants WHERE variants.product_id = ${products.id})`,
+      ),
+      asc(products.id),
+    ];
+  } else if (sortBy === "high") {
+    // Sort by the most expensive variant price for each product
+    orderByClause = [
+      desc(
+        sql`(SELECT MAX(variants.price) FROM variants WHERE variants.product_id = ${products.id})`,
+      ),
+      asc(products.id),
+    ];
+  } else {
+    orderByClause = [desc(products.createdAt), asc(products.id)];
+  }
+  const whereConditions = [];
+  whereConditions.push(eq(products.organizationId, organizationData.id));
+
+  if (selectStatus) {
+    whereConditions.push(eq(products.status, selectStatus));
+  }
+
+  if (search?.trim()) {
+    whereConditions.push(
+      or(
+        ilike(products.name, `%${search.trim()}%`),
+        ilike(products.brand, `%${search.trim()}%`),
+        ilike(products.status, `%${search.trim()}%`),
+      ),
+    );
+  }
   const productsList = await db.query.products.findMany({
-    where: search?.trim()
-      ? and(
-          eq(products.organizationId, organizationData.id),
-          or(
-            ilike(products.name, `%${search.trim()}%`),
-            ilike(products.brand, `%${search.trim()}%`),
-            ilike(products.status, `%${search.trim()}%`),
-          ),
-        )
-      : eq(products.organizationId, organizationData.id),
+    where: and(...whereConditions),
     extras: {
       variantCount: sql<number>`(
         SELECT COUNT(*) FROM variants WHERE variants.product_id = ${products.id}
@@ -66,11 +98,13 @@ export const getProducts = async (
       category: true,
     },
     limit,
+    orderBy: orderByClause,
     offset,
   });
   const productListData = productsList.map((product) => ({
     id: product.id,
     name: product.name,
+    slug: product.slug,
     costPrice: product.variants?.[0]?.costPrice ?? null,
     createdAt: product.createdAt,
     variants: product.variantCount ?? 0,
@@ -352,4 +386,20 @@ export const getFeaturedProduct = async () => {
     .orderBy(desc(sum(order.total)))
     .limit(5);
   return { topProducts, transformed, topStores };
+};
+export const addNewOptionToProduct = async (productId: string, option: any) => {
+  const [newOption] = await db
+    .insert(productOptions)
+    .values({
+      productId: productId,
+      name: option.name,
+    })
+    .returning();
+  for (let value of option.value) {
+    await db.insert(productOptionValues).values({
+      productOptionId: newOption.id,
+      value: value,
+    });
+  }
+  return { success: true };
 };

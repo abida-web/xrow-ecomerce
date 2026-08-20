@@ -4,6 +4,7 @@ import { getCustomers } from "@/app/actions/order-actions";
 import { Search, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useDebouncedValue } from "@tanstack/react-pacer";
 interface CustomerProps {
   customer: string;
   email: string;
@@ -17,53 +18,67 @@ const CustomersPage = () => {
   const storeslug = String(params.storeslug);
   const [customers, setCustomers] = useState<CustomerProps[] | []>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, { wait: 500 });
   async function fetchCustomers() {
-    const res = await getCustomers(storeslug, search);
+    const res = await getCustomers(storeslug, debouncedSearch);
     setCustomers(res);
   }
   useEffect(() => {
+    if (!storeslug) return;
     fetchCustomers();
-  }, [search]);
+  }, [storeslug, debouncedSearch]);
   return (
     <div>
-      <div className=" flex items-center justify-between py-4 ">
-        <h1 className=" text-2xl ">Customers List</h1>
-        <div className="relative ">
+      <div className="flex items-center justify-between py-4">
+        <h1 className="text-2xl font-bold text-gray-800">Customers List</h1>
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             type="text"
             placeholder="Search customer by name, email, phone..."
-            className="w-full bg-white/5 pl-10 pr-4 py-2 rounded-full shadow-xs shadow-orange-500 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+            className="w-full bg-gray-50 pl-10 pr-4 py-2 rounded-full border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
         </div>
       </div>
-      <div className=" bg-white/5">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-white/5 border-b border-white/10 rolg">
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr className="text-left rounded-lg">
-              <th className="px-4 py-3 font-medium"> Name</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium"> Phone</th>
-              <th className="px-4 py-3 font-medium">Total orders</th>
-              <th className="px-4 py-3 font-medium">Total spent</th>
-              <th className="px-4 py-3 font-medium">Last Order Date</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Name</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Email</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Phone</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">
+                Total orders
+              </th>
+              <th className="px-4 py-3 font-semibold text-gray-700">
+                Total spent
+              </th>
+              <th className="px-4 py-3 font-semibold text-gray-700">
+                Last Order Date
+              </th>
             </tr>
           </thead>
           <tbody>
             {customers?.map((cus: any) => (
               <tr
                 key={cus.customer}
-                className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
               >
-                <td className="px-4 py-3">{cus.customer}</td>
-                <td className="px-4 py-3">{cus.email}</td>
-                <td className="px-4 py-3">{cus.phone}</td>
-                <td className="px-4 py-3">{cus.orders}</td>
-                <td className="px-4 py-3">{cus.total}</td>
-                <td className="px-4 py-3">
-                  {new Date(cus.lastOrderDate).toLocaleDateString()}
+                <td className="px-4 py-3 text-gray-800 font-medium">
+                  {cus.customer}
+                </td>
+                <td className="px-4 py-3 text-gray-600">{cus.email}</td>
+                <td className="px-4 py-3 text-gray-600">{cus.phone || "—"}</td>
+                <td className="px-4 py-3 text-gray-600">{cus.orders}</td>
+                <td className="px-4 py-3 text-gray-700 font-medium">
+                  AFN {cus.total?.toLocaleString() || "0"}
+                </td>
+                <td className="px-4 py-3 text-gray-500">
+                  {cus.lastOrderDate
+                    ? new Date(cus.lastOrderDate).toLocaleDateString()
+                    : "—"}
                 </td>
               </tr>
             ))}

@@ -161,10 +161,10 @@ const DeliveriesPage = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 bg-black min-h-screen">
-      <h1 className="text-xl sm:text-2xl flex items-center gap-2 flex-wrap text-white">
+    <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-screen">
+      <h1 className="text-xl sm:text-2xl flex items-center gap-2 flex-wrap text-gray-800">
         Today's Deliveries
-        <span className="bg-orange-500 text-sm px-2 rounded-full">
+        <span className="bg-orange-500 text-white text-sm px-2 rounded-full">
           {deliveriesList.length}
         </span>
       </h1>
@@ -180,11 +180,11 @@ const DeliveriesPage = () => {
           ) : (
             deliveriesList.map((order) => (
               <div
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-xs shadow-gray-500 rounded-lg p-4 sm:p-5 gap-4"
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm bg-white rounded-lg p-4 sm:p-5 gap-4 border border-gray-200"
                 key={order.id}
               >
                 <div className="flex gap-3 sm:gap-5 items-center w-full sm:w-auto">
-                  <div className="text-orange-500 rounded-full bg-orange-200/10 px-3 py-5 flex-shrink-0">
+                  <div className="text-orange-500 rounded-full bg-orange-100 px-3 py-5 flex-shrink-0">
                     <Truck className="h-8 w-8 sm:h-10 sm:w-10" />
                   </div>
                   <div className="flex flex-col gap-1 flex-1 min-w-0">
@@ -193,14 +193,14 @@ const DeliveriesPage = () => {
                     >
                       {order.status?.replace(/_/g, " ") || "Unknown"}
                     </span>
-                    <h1 className="text-base sm:text-lg truncate text-white">
+                    <h1 className="text-base sm:text-lg truncate text-gray-800">
                       Order #{order.id.slice(0, 10)}
                     </h1>
-                    <p className="flex text-xs items-center gap-1 text-gray-400 truncate">
+                    <p className="flex text-xs items-center gap-1 text-gray-500 truncate">
                       <User size={15} className="flex-shrink-0" />
                       {order.driver?.name || "Unassigned"}
                     </p>
-                    <p className="flex text-xs items-center gap-1 text-gray-400 truncate">
+                    <p className="flex text-xs items-center gap-1 text-gray-500 truncate">
                       <MapPin size={15} className="flex-shrink-0" />
                       <span className="truncate">
                         {[
@@ -215,7 +215,7 @@ const DeliveriesPage = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
-                  <h1 className="text-green-500 text-sm sm:text-base whitespace-nowrap">
+                  <h1 className="text-green-600 text-sm sm:text-base whitespace-nowrap font-medium">
                     AFN {order.total || "0"}
                   </h1>
                   <button
@@ -225,8 +225,8 @@ const DeliveriesPage = () => {
                     }}
                     className={`py-1.5 text-sm px-3 transition-all duration-300 cursor-pointer hover:scale-105 rounded-lg flex justify-between items-center gap-2 whitespace-nowrap ${
                       order.status === "delivered"
-                        ? "bg-orange-500"
-                        : "bg-blue-800"
+                        ? "bg-orange-500 hover:bg-orange-600"
+                        : "bg-blue-600 hover:bg-blue-700"
                     } text-white`}
                   >
                     {order.status === "delivered" ? "View" : "Start delivery"}

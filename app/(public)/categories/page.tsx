@@ -42,14 +42,14 @@ const CategoriesPage = () => {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-10">
-          <div className="h-10 w-72 bg-gray-700/30 rounded-lg animate-pulse mb-3" />
-          <div className="h-5 w-96 bg-gray-700/30 rounded-lg animate-pulse" />
+          <div className="h-10 w-72 bg-gray-200 rounded-lg animate-pulse mb-3" />
+          <div className="h-5 w-96 bg-gray-200 rounded-lg animate-pulse" />
         </div>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {[...Array(8)].map((_, i) => (
             <div
               key={i}
-              className="h-40 bg-gray-700/20 rounded-2xl animate-pulse"
+              className="h-40 bg-gray-100 rounded-2xl animate-pulse"
             />
           ))}
         </div>
@@ -58,14 +58,14 @@ const CategoriesPage = () => {
   }
 
   return (
-    <div className="min-h-screen  text-white">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
             Discover Our Full Categories
           </h1>
-          <p className="text-gray-400 mt-3 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-600 mt-3 text-lg max-w-2xl mx-auto">
             Browse categories filled with exciting topics and new skills
           </p>
         </div>
@@ -78,24 +78,24 @@ const CategoriesPage = () => {
               <Link
                 href={`/products?category=${encodeURIComponent(cat.name)}`}
                 key={cat.id}
-                className="group relative flex flex-col items-center p-6 md:p-8 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-orange-500/50 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/10"
+                className="group relative flex flex-col items-center p-6 md:p-8 bg-white rounded-2xl border border-gray-200 hover:border-orange-300 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-orange-100/50"
                 style={{
                   animationDelay: `${index * 50}ms`,
                 }}
               >
                 {/* Glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/0 via-orange-500/0 to-orange-500/0 group-hover:from-orange-500/10 group-hover:via-orange-500/5 group-hover:to-orange-500/0 rounded-2xl transition-all duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-50/0 via-orange-50/0 to-orange-50/0 group-hover:from-orange-50 group-hover:via-orange-50/50 group-hover:to-orange-50/0 rounded-2xl transition-all duration-500" />
 
                 {/* Icon container */}
                 <div className="relative mb-4">
-                  <div className="absolute inset-0 bg-orange-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300" />
-                  <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-orange-500/20 to-orange-600/20 flex items-center justify-center border border-white/10 group-hover:border-orange-500/50 transition-all duration-300">
-                    <IconComponent className="w-8 h-8 text-orange-400 group-hover:text-orange-300 group-hover:scale-110 transition-all duration-300" />
+                  <div className="absolute inset-0 bg-orange-100/50 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300" />
+                  <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center border border-gray-200 group-hover:border-orange-300 transition-all duration-300">
+                    <IconComponent className="w-8 h-8 text-orange-500 group-hover:text-orange-600 group-hover:scale-110 transition-all duration-300" />
                   </div>
                 </div>
 
                 {/* Category name */}
-                <h3 className="text-sm md:text-base font-medium text-gray-300 group-hover:text-white transition-colors duration-300 text-center">
+                <h3 className="text-sm md:text-base font-medium text-gray-700 group-hover:text-gray-900 transition-colors duration-300 text-center">
                   {cat.name}
                 </h3>
 
@@ -109,11 +109,11 @@ const CategoriesPage = () => {
         {/* Empty state */}
         {categoriesList.length === 0 && !isLoading && (
           <div className="text-center py-20">
-            <Icons.FolderOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-400">
+            <Icons.FolderOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-500">
               No categories found
             </h3>
-            <p className="text-gray-500 mt-2">
+            <p className="text-gray-400 mt-2">
               Categories will appear here once added
             </p>
           </div>

@@ -2,15 +2,15 @@
 import { db } from "@/drizzle/db";
 import {
   organization,
-  productImages,
+  productOptions,
+  productOptionValues,
   products,
-  variants,
 } from "@/drizzle/schema";
 import { auth } from "@/lib/auth";
 import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-
+import slugify from "slugify";
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -41,13 +41,12 @@ export async function PATCH(
       .set({
         categoryId: productForm.categoryId,
         name: productForm.name,
+        slug: slugify(productForm.name),
         description: productForm.description || null,
         status: productForm.status || null,
-        comparePriceAt: productForm.comparePriceAt || null,
-        costPrice: productForm.costPrice || null,
+        featured: productForm.featured || false,
         brand: productForm.brand || null,
-        weight: productForm.weight || null,
-        weightUnit: productForm.weightUnit || null,
+        updatedAt: new Date(),
       })
       .where(
         and(
@@ -61,22 +60,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    const finalProduct = await db.query.products.findFirst({
-      where: eq(products.id, updatedProduct.id),
-      with: {
-        variants: true,
-        images: true,
-      },
-    });
-
-    return NextResponse.json(
-      {
-        success: true,
-        product: finalProduct,
-      },
-      { status: 200 },
-    );
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
+    console.error("Error:", error);
     return NextResponse.json(
       { error: "Failed to update product" },
       { status: 500 },

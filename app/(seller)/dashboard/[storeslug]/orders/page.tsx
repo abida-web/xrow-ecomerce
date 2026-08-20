@@ -72,7 +72,7 @@ const OrdersPage = () => {
       status: string;
       orderId: string;
     }) => {
-      return updateStatus({ status, orderId });
+      return updateStatus({ status, orderId, storeslug });
     },
     onSuccess: () => {
       toast.success("Status updated successfully");
@@ -91,7 +91,7 @@ const OrdersPage = () => {
       driverId: string;
       orderId: string;
     }) => {
-      return assignDriver(orderId, driverId);
+      return assignDriver(orderId, driverId, storeslug);
     },
     onSuccess: () => {
       toast.success("Driver assigned successfully");
@@ -155,7 +155,7 @@ const OrdersPage = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-white/60">Loading orders...</div>
+        <div className="text-gray-500">Loading orders...</div>
       </div>
     );
   }
@@ -163,7 +163,7 @@ const OrdersPage = () => {
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-white/60">No orders found</div>
+        <div className="text-gray-500">No orders found</div>
       </div>
     );
   }
@@ -171,7 +171,12 @@ const OrdersPage = () => {
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center mb-3">
-        <h1 className="text-2xl font-semibold mt-5">Orders List</h1>
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-bold text-gray-800">Orders</h1>
+          <p className="text-sm text-orange-500">
+            Manage and track your customer orders
+          </p>
+        </div>
 
         <div className="flex items-center gap-5">
           <div className="flex gap-4 items-center">
@@ -181,8 +186,8 @@ const OrdersPage = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 type="text"
-                placeholder="Search product by name, category, status, or price..."
-                className="w-full bg-white/5 pl-10 pr-4 py-2 rounded-full shadow-xs shadow-orange-500 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                placeholder="Search orders..."
+                className="w-full bg-gray-50 pl-10 pr-4 py-2 rounded-full border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
             {data && (
@@ -193,7 +198,7 @@ const OrdersPage = () => {
               >
                 {statuses.map((sta: string, i: number) => (
                   <option
-                    className="bg-white text-black"
+                    className="bg-white text-gray-800"
                     key={i}
                     value={sta === "All" ? "" : sta}
                   >
@@ -206,18 +211,24 @@ const OrdersPage = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-white/10">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
         <table className="w-full text-sm">
-          <thead className="bg-white/5 border-b border-white/10">
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr className="text-left">
-              <th className="px-4 py-3 font-medium">Info</th>
-              <th className="px-4 py-3 font-medium">Order</th>
-              <th className="px-4 py-3 font-medium">Customer</th>
-              <th className="px-4 py-3 font-medium">Items</th>
-              <th className="px-4 py-3 font-medium text-center">Total</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium text-center">Date</th>
-              <th className="px-4 py-3 font-medium">Actions</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Info</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Order</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">
+                Customer
+              </th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Items</th>
+              <th className="px-4 py-3 font-semibold text-gray-700 text-center">
+                Total
+              </th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Status</th>
+              <th className="px-4 py-3 font-semibold text-gray-700 text-center">
+                Date
+              </th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -225,22 +236,24 @@ const OrdersPage = () => {
               return (
                 <tr
                   key={order.id}
-                  className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                 >
                   <td className="py-3 px-4 font-mono">
                     <Link
                       href={`/dashboard/${storeslug}/orders/${order.id}`}
-                      className="text-blue-400 hover:text-blue-300 transition-colors text-sm"
+                      className="text-orange-500 hover:text-orange-600 transition-colors text-sm"
                     >
                       <Eye className="h-4 w-4" />
                     </Link>
                   </td>
-                  <td className="py-3 px-4 font-mono">
-                    #{order.id.slice(0, 8)}
+                  <td className="py-3 px-4 font-mono text-gray-600">
+                    #{order.id.slice(0, 10)}
                   </td>
-                  <td className="py-3 px-4">{order.customer || "Guest"}</td>
-                  <td className="py-3 px-4">{order.itemCount}</td>
-                  <td className="py-3 px-4 text-right">
+                  <td className="py-3 px-4 text-gray-700">
+                    {order.customer || "Guest"}
+                  </td>
+                  <td className="py-3 px-4 text-gray-600">{order.itemCount}</td>
+                  <td className="py-3 px-4 text-right text-gray-700 font-medium">
                     {new Intl.NumberFormat("en-US", {
                       style: "currency",
                       currency: "AFN",
@@ -268,7 +281,7 @@ const OrdersPage = () => {
                       <option value="cancelled">Cancelled</option>
                     </select>
                   </td>
-                  <td className="py-3 px-4 text-center">
+                  <td className="py-3 px-4 text-center text-gray-500">
                     {new Date(order.date).toLocaleDateString("en-US", {
                       year: "numeric",
                       month: "short",
@@ -287,7 +300,7 @@ const OrdersPage = () => {
                             })
                           }
                           defaultValue=""
-                          className="px-2 py-1 rounded-full text-xs font-medium bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                          className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
                         >
                           <option value="" disabled>
                             Select driver
@@ -316,20 +329,20 @@ const OrdersPage = () => {
       {/* Pagination controls - optional */}
       {data && data.length > 0 && (
         <div className="flex justify-between items-center mt-4">
-          <div className="text-sm text-white/60">
+          <div className="text-sm text-gray-500">
             Showing {data.length} orders
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1 rounded bg-white/5 text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
             <button
               onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-1 rounded bg-white/5 text-white/60 hover:bg-white/10"
+              className="px-3 py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
             >
               Next
             </button>

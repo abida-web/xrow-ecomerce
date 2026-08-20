@@ -3,6 +3,7 @@ import {
   address,
   cart,
   cartItem,
+  notification,
   order,
   orderItem,
   variants,
@@ -125,7 +126,18 @@ export async function POST(req: Request) {
         shippingPostalCode: addressData.postalCode,
       })
       .returning();
-
+    await db
+      .insert(notification)
+      .values({
+        shopId: orgId,
+        type: "NEW ORDER",
+        title: "New order recived",
+        message: `Order #${newOrder.id.slice(0, 10)} has been placed`,
+        entityType: "ORDER",
+        entityId: String(order.id),
+        isRead: false,
+      })
+      .returning();
     // Insert ALL items for this organization into the SAME order
     for (const item of items) {
       await db.insert(orderItem).values({

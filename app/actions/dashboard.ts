@@ -6,6 +6,7 @@ import {
   orderItem,
   productImages,
   products,
+  user,
   variants,
 } from "@/drizzle/schema";
 import { auth } from "@/lib/auth";
@@ -97,6 +98,28 @@ export const totalDashboardOperation = async (storeslug: string) => {
     .groupBy(products.id, products.name)
     .orderBy(asc(sql`SUM(${variants.stock})`)) // Order by lowest total stock first
     .limit(10);
+  const productsCount = await db
+    .select()
+    .from(products)
+    .where(eq(products.organizationId, storeData.id));
+  const recentOrders = await db
+    .select({
+      id: order.id,
+      customer: user.name,
+      total: order.total,
+      status: order.status,
+      date: order.createdAt,
+
+      itemCount: sql<number>`count(${orderItem.id})`.as("itemCount"),
+    })
+    .from(order)
+    .innerJoin(user, eq(order.userId, user.id))
+    .leftJoin(orderItem, eq(orderItem.orderId, order.id))
+    .where(eq(order.organizationId, storeData.id))
+    .orderBy(desc(order.createdAt))
+    .groupBy(order.id, user.name, order.total, order.status, order.createdAt)
+    .limit(10);
+
   return {
     totalOrders,
     totalRevenue,
@@ -105,6 +128,8 @@ export const totalDashboardOperation = async (storeslug: string) => {
     todayRevenue,
     salesOverviewData,
     topProducts,
+    productsCount,
     tenLowStack,
+    recentOrders,
   };
 };

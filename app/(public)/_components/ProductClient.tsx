@@ -7,11 +7,11 @@ import {
   ChevronDown,
   FilterX,
   LoaderCircle,
-  Sliders,
   SlidersHorizontal,
   X,
 } from "lucide-react";
 import { useDebounce } from "use-debounce";
+
 export default function ProductsClient() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
@@ -27,6 +27,7 @@ export default function ProductsClient() {
   const [page, setPage] = useState(1);
   const [openFilters, setOpenFilters] = useState(false);
   const [debouncedPriceRange] = useDebounce(selectPriceRange, 500);
+
   const getQueryParams = useCallback(() => {
     const params = new URLSearchParams();
     if (page) params.append("page", String(page));
@@ -41,9 +42,12 @@ export default function ProductsClient() {
       params.append("minPrice", "500");
     } else if (sortBy === "newest") {
       params.append("sort", "newest");
-    } else if (selectPriceRange.min > 0 || selectPriceRange.max <= 10000) {
-      params.append("minPrice", String(selectPriceRange.min));
-      params.append("maxPrice", String(selectPriceRange.max));
+    } else if (
+      (debouncedPriceRange && debouncedPriceRange.min > 0) ||
+      (debouncedPriceRange && debouncedPriceRange.max <= 10000)
+    ) {
+      params.append("minPrice", String(debouncedPriceRange.min));
+      params.append("maxPrice", String(debouncedPriceRange.max));
     }
     if (selectedStockOption === "INSTOCK") {
       params.append("in-stock", "true");
@@ -63,6 +67,7 @@ export default function ProductsClient() {
     selectedStockOption,
     selectedBrand,
   ]);
+
   const { data, isLoading, error } = useQuery({
     queryKey: [
       "products",
@@ -75,7 +80,6 @@ export default function ProductsClient() {
       debouncedPriceRange.max,
       debouncedPriceRange.min,
     ],
-
     queryFn: useCallback(async () => {
       const response = await fetch(`/api/public/products?${getQueryParams()}`);
       return await response.json();
@@ -92,9 +96,12 @@ export default function ProductsClient() {
     });
     return Array.from(categorySet);
   }, [data]);
+
   const brands = useMemo(() => {
-    return [...new Set(data?.map((p: any) => p.brand))];
+    if (!data || data.length === 0) return [];
+    return [...new Set(data.map((p: any) => p.brand).filter(Boolean))];
   }, [data]);
+
   const hasActiveFilters =
     selectCategory ||
     sortBy !== "all" ||
@@ -107,7 +114,7 @@ export default function ProductsClient() {
   if (isLoading)
     return (
       <div className="flex justify-center mt-30 items-center min-h-[200px]">
-        <div className="text-orange-500  animate-spin">
+        <div className="text-orange-500 animate-spin">
           <LoaderCircle />
         </div>
       </div>
@@ -122,21 +129,21 @@ export default function ProductsClient() {
 
   return (
     <div>
-      <h1 className="text-2xl py-5 font-bold">
+      <h1 className="text-2xl py-5 font-bold text-gray-800">
         {searchTerm ? `Results for "${searchTerm}"` : "Find all you need"}
       </h1>
 
       {searchTerm && data && (
-        <p className="text-gray-400 mb-4">
+        <p className="text-gray-500 mb-4">
           Found {data.length} product{data.length !== 1 ? "s" : ""}
         </p>
       )}
 
-      <div className="flex flex-wrap gap-3 items-center mb-8 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+      <div className="flex flex-wrap gap-3 items-center mb-8 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
         {/* Filter Toggle Button */}
         <button
           onClick={() => setOpenFilters(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 text-orange-400 rounded-lg hover:bg-orange-500/20 transition-all duration-300"
+          className="flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-all duration-300"
         >
           <SlidersHorizontal className="w-4 h-4" />
           <span className="text-sm font-medium">Filters</span>
@@ -148,7 +155,7 @@ export default function ProductsClient() {
         {/* Category Select */}
         <div className="relative group">
           <select
-            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-300 appearance-none pr-8 hover:bg-white/10 transition-colors"
+            className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-700 appearance-none pr-8 hover:bg-gray-100 transition-colors"
             value={selectCategory}
             onChange={(e) => setSelectCategory(e.target.value)}
           >
@@ -165,7 +172,7 @@ export default function ProductsClient() {
         {/* Sort Select */}
         <div className="relative group">
           <select
-            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-300 appearance-none pr-8 hover:bg-white/10 transition-colors"
+            className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-700 appearance-none pr-8 hover:bg-gray-100 transition-colors"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
@@ -189,7 +196,7 @@ export default function ProductsClient() {
               setSelectedBrand("");
               setPage(1);
             }}
-            className="flex items-center gap-1 px-3 py-1.5 text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 rounded-lg transition-all duration-300 text-sm"
+            className="flex items-center gap-1 px-3 py-1.5 text-orange-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-300 text-sm"
           >
             <FilterX size={16} />
             <span>Clear</span>
@@ -199,8 +206,8 @@ export default function ProductsClient() {
 
       {!data || data.length === 0 ? (
         <div className="text-center py-10">
-          <p className="text-gray-400">No products found</p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-gray-500">No products found</p>
+          <p className="text-sm text-gray-400 mt-2">
             Try adjusting your filters
           </p>
         </div>
@@ -225,16 +232,19 @@ export default function ProductsClient() {
           ))}
         </div>
       )}
+
       {openFilters && (
-        <div className="flex flex-col bg-black text-white fixed top-0 left-0 w-60 h-full p-4">
+        <div className="flex flex-col bg-white text-gray-800 fixed top-0 left-0 w-60 h-full p-4 shadow-2xl border-r border-gray-200">
           <button
             onClick={() => setOpenFilters(false)}
-            className=" absolute right-5  "
+            className="absolute right-5 top-4 text-gray-600 hover:text-gray-800"
           >
             <X size={20} />
           </button>
           <div className="w-full max-w-xs mt-10 flex flex-col">
-            <label className="text-sm font-semibold mb-4">Price range</label>
+            <label className="text-sm font-semibold text-gray-700 mb-4">
+              Price range
+            </label>
             <input
               type="range"
               min={0}
@@ -246,70 +256,83 @@ export default function ProductsClient() {
                   max: Number(e.target.value),
                 }));
               }}
-              className="range range-xs"
+              className="range range-xs accent-orange-500"
               step="1"
             />
-            <div className="flex justify-between px-2.5 mt-2 text-xs">
+            <div className="flex justify-between px-2.5 mt-2 text-xs text-gray-600">
               <span>{selectPriceRange.min}</span>
               <span>{selectPriceRange.max.toLocaleString()} AFN</span>
             </div>
-            <label className="text-sm font-semibold mt-4">Availability</label>
+
+            <label className="text-sm font-semibold text-gray-700 mt-4">
+              Availability
+            </label>
             <button
               onClick={() => setSelectedStockOption("INSTOCK")}
-              className="flex items-center mt-3 gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 transition-colors"
+              className={`flex items-center mt-3 gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
+                selectedStockOption === "INSTOCK"
+                  ? "border-green-500 bg-green-50 text-green-700"
+                  : "border-gray-200 hover:bg-gray-50 text-gray-600"
+              }`}
             >
               <span className="relative flex size-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex size-2.5 rounded-full bg-green-500"></span>
               </span>
-              <span className="text-sm font-medium text-green-400">
-                In Stock
-              </span>
+              <span className="text-sm font-medium">In Stock</span>
             </button>
             <button
               onClick={() => setSelectedStockOption("OUTOFSTOCK")}
-              className="flex items-center mt-3 gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+              className={`flex items-center mt-3 gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
+                selectedStockOption === "OUTOFSTOCK"
+                  ? "border-red-500 bg-red-50 text-red-700"
+                  : "border-gray-200 hover:bg-gray-50 text-gray-600"
+              }`}
             >
               <span className="relative flex size-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex size-2.5 rounded-full bg-red-500"></span>
               </span>
-              <span className="text-sm font-medium text-red-400">
-                Out of Stock
-              </span>
+              <span className="text-sm font-medium">Out of Stock</span>
             </button>
-            <h3 className="text-sm font-semibold mt-4">Brand</h3>
+
+            <h3 className="text-sm font-semibold text-gray-700 mt-4">Brand</h3>
             <div>
               {brands.map((brand: any, i: number) => (
                 <button
                   key={i}
                   onClick={() => setSelectedBrand(brand)}
-                  className="flex items-center w-full mt-3 gap-2 px-3 py-1.5 rounded-sm  hover:bg-white/10   transition-colors"
+                  className={`flex items-center w-full mt-3 gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                    selectedBrand === brand
+                      ? "bg-orange-50 text-orange-600 font-medium"
+                      : "hover:bg-gray-50 text-gray-600"
+                  }`}
                 >
-                  <span className="relative flex size-2">
-                    <span className="relative inline-flex size-2 rounded-full bg-gray-500"></span>
-                  </span>
-                  <span className="text-sm font-medium text-gray-400">
-                    {brand}
-                  </span>
+                  <span
+                    className={`relative flex size-2 ${
+                      selectedBrand === brand ? "bg-orange-500" : "bg-gray-300"
+                    } rounded-full`}
+                  />
+                  <span className="text-sm font-medium">{brand}</span>
                 </button>
               ))}
             </div>
           </div>
         </div>
       )}
+
       <div className="flex justify-center items-center gap-4 mt-8">
         <button
           onClick={() => setPage((prev) => Math.max(1, prev - 1))}
           disabled={page === 1}
-          className="px-4 py-2 bg-white/10 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
         >
           Previous
         </button>
-
+        <span className="text-sm text-gray-600">Page {page}</span>
         <button
           onClick={() => setPage((prev) => prev + 1)}
-          className="px-4 py-2 bg-white/10 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
         >
           Next
         </button>

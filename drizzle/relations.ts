@@ -17,6 +17,7 @@ import {
   address,
   variantImages,
   variantOptionValues,
+  notification,
 } from "./schema";
 
 // ============ CATEGORY RELATIONS ============
@@ -173,7 +174,12 @@ export const addressRelations = relations(address, ({ one }) => ({
     references: [order.id],
   }),
 }));
-
+export const notificationRelations = relations(notification, ({ one }) => ({
+  organization: one(organization, {
+    fields: [notification.shopId],
+    references: [organization.id],
+  }),
+}));
 // Export all relations
 export const allRelations = {
   categoriesRelations,

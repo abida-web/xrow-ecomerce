@@ -187,7 +187,6 @@ const CartPage = () => {
     }));
   };
 
-  // Using DaisyUI (if you have it installed)
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-10 mt-30 text-orange-500">
@@ -197,26 +196,28 @@ const CartPage = () => {
   }
 
   return (
-    <div>
-      <h1 className="mb-5 text-2xl font-semibold">
+    <div className="max-w-7xl mx-auto px-4">
+      <h1 className="mb-5 text-2xl font-semibold text-gray-800">
         {openCheckoutModal ? "Checkout" : "Shopping Cart"}
       </h1>
       <div className="grid lg:grid-cols-[800px_1fr] gap-5">
         {openCheckoutModal ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
               <div className="flex justify-between items-center mb-4">
-                <h1 className="text-xl font-semibold">Shipping Address</h1>
+                <h1 className="text-xl font-semibold text-gray-800">
+                  Shipping Address
+                </h1>
                 <button
                   onClick={() => setOpenCheckoutModal(false)}
-                  className="hover:bg-white/10 p-2 rounded-full transition-colors"
+                  className="hover:bg-gray-100 p-2 rounded-full transition-colors text-gray-500"
                 >
                   <X size={24} />
                 </button>
               </div>
 
               <div className="mt-5">
-                <div className="bg-white/5 rounded-lg p-5">
+                <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
                   <div className="mb-4">
                     <CustomInput
                       label="Full Name *"
@@ -339,7 +340,7 @@ const CartPage = () => {
                     />
                     <label
                       htmlFor="isDefault"
-                      className="text-sm text-gray-300 cursor-pointer"
+                      className="text-sm text-gray-600 cursor-pointer"
                     >
                       {defaultAddress
                         ? "Use default address"
@@ -352,7 +353,7 @@ const CartPage = () => {
               <button
                 onClick={handlePlaceOrder}
                 disabled={createOrderMutation.isPending}
-                className="mt-5 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 py-3 flex justify-center items-center gap-2 rounded-lg w-full transition-colors"
+                className="mt-5 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 flex justify-center items-center gap-2 rounded-lg w-full transition-colors"
               >
                 {createOrderMutation.isPending
                   ? "Placing Order..."
@@ -373,27 +374,27 @@ const CartPage = () => {
                     const subTotal = item.variant.price * item.quantity;
                     return (
                       <div key={item.id} className="flex items-center">
-                        <div className="grid grid-cols-4 items-center gap-5 flex-1 bg-white/10 p-3 rounded-lg">
+                        <div className="grid grid-cols-4 items-center gap-5 flex-1 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                           <img
                             src={item.variant?.product?.images?.[0]?.url}
                             className="w-[80px] h-[100px] object-cover rounded-lg"
                             alt={item.variant?.product?.name}
                           />
                           <div className="flex flex-col gap-1">
-                            <p className="font-medium">
+                            <p className="font-medium text-gray-800">
                               {item.variant?.product?.name}
                             </p>
                             <p className="text-gray-400 text-xs">
                               #{item.variantId.slice(0, 10)}
                             </p>
-                            <p className="text-sm text-gray-300">
+                            <p className="text-sm text-gray-500">
                               {item?.variant?.optionValues
                                 .map((val: any) => val.productOptionValue.value)
                                 .join(" - ")}
                             </p>
                           </div>
                           <div className="flex gap-5 items-center">
-                            <p className="bg-white/10 py-1 text-xs px-1.5 rounded-full">
+                            <p className="bg-gray-100 py-1 text-xs px-1.5 rounded-full text-gray-600">
                               {item.quantity}
                             </p>
                             <div className="flex flex-col gap-2">
@@ -405,12 +406,9 @@ const CartPage = () => {
                                   )
                                 }
                                 disabled={updateQuantityMutation.isPending}
-                                className="hover:opacity-70 transition-opacity"
+                                className="hover:opacity-70 transition-opacity text-orange-500"
                               >
-                                <PlusCircle
-                                  fill="oklch(70.5% 0.213 47.604)"
-                                  size={20}
-                                />
+                                <PlusCircle size={20} />
                               </button>
                               <button
                                 onClick={() =>
@@ -420,16 +418,13 @@ const CartPage = () => {
                                   )
                                 }
                                 disabled={updateQuantityMutation.isPending}
-                                className="hover:opacity-70 transition-opacity"
+                                className="hover:opacity-70 transition-opacity text-orange-500"
                               >
-                                <MinusCircle
-                                  fill="oklch(70.5% 0.213 47.604)"
-                                  size={20}
-                                />
+                                <MinusCircle size={20} />
                               </button>
                             </div>
                           </div>
-                          <p>
+                          <p className="text-gray-800">
                             <span className="text-orange-500">afg</span>
                             {subTotal.toFixed(2)}
                           </p>
@@ -437,7 +432,7 @@ const CartPage = () => {
                         <button
                           onClick={() => handleDeleteItem(item.variantId)}
                           disabled={deleteItemMutation.isPending}
-                          className="ml-5 hover:text-red-500 hover:bg-red-600/20 p-2 transition-colors rounded-full"
+                          className="ml-5 hover:text-red-500 hover:bg-red-50 p-2 transition-colors rounded-full text-gray-400"
                         >
                           <Trash2 size={20} />
                         </button>
@@ -446,7 +441,7 @@ const CartPage = () => {
                   })}
                 </div>
                 <div className="flex items-center gap-10">
-                  <span className="text-gray-400">Subtotal:</span>
+                  <span className="text-gray-500">Subtotal:</span>
                   <span className="text-orange-500 font-semibold">
                     afg{subTotal.toFixed(2)}
                   </span>
@@ -455,38 +450,38 @@ const CartPage = () => {
             )}
           </div>
         )}
-        <div className=" w-full bg-white/5 p-5 h-fit rounded-lg sticky top-5">
-          <h1 className="pb-4 border-b border-gray-500 font-semibold">
+        <div className="w-full bg-white p-5 h-fit rounded-lg border border-gray-200 shadow-sm sticky top-5">
+          <h1 className="pb-4 border-b border-gray-200 font-semibold text-gray-800">
             Order Summary
           </h1>
           <div className="flex justify-between items-center mt-3">
-            <p className="text-gray-400">Items</p>
-            <p>{cartItems?.totalCartItems || 0}</p>
+            <p className="text-gray-500">Items</p>
+            <p className="text-gray-700">{cartItems?.totalCartItems || 0}</p>
           </div>
           <div className="flex justify-between items-center mt-3">
-            <p className="text-gray-400">Sub Total</p>
-            <p>
+            <p className="text-gray-500">Sub Total</p>
+            <p className="text-gray-700">
               <span className="text-orange-500">afg</span>
               {subTotal.toFixed(2)}
             </p>
           </div>
           <div className="flex justify-between items-center mt-3">
-            <p className="text-gray-400">Shipping</p>
-            <p>
+            <p className="text-gray-500">Shipping</p>
+            <p className="text-gray-700">
               <span className="text-orange-500">afg</span>
               {shipping.toFixed(2)}
             </p>
           </div>
-          <div className="flex justify-between items-center mt-3 mb-4 border-b pb-4 border-gray-500">
-            <p className="text-gray-400">Taxes</p>
-            <p>
+          <div className="flex justify-between items-center mt-3 mb-4 border-b pb-4 border-gray-200">
+            <p className="text-gray-500">Taxes</p>
+            <p className="text-gray-700">
               <span className="text-orange-500">afg</span>
               {tax.toFixed(2)}
             </p>
           </div>
           <div className="flex justify-between items-center mt-3 mb-4">
-            <p className="text-gray-400 font-semibold">Total</p>
-            <p className="text-xl font-bold">
+            <p className="text-gray-600 font-semibold">Total</p>
+            <p className="text-xl font-bold text-gray-800">
               <span className="text-orange-500">afg</span>
               {total.toFixed(2)}
             </p>
@@ -500,7 +495,7 @@ const CartPage = () => {
             disabled={
               !cartItems?.userCartItems?.length || createOrderMutation.isPending
             }
-            className="bg-orange-500 w-full hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-lg transition-colors"
+            className="bg-orange-500 w-full hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-lg transition-colors"
           >
             {openCheckoutModal
               ? createOrderMutation.isPending

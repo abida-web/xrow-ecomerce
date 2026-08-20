@@ -6,21 +6,32 @@ import { useQuery } from "@tanstack/react-query";
 import { Menu, Search, ShoppingCart, Store, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const Navbar = () => {
   const path = usePathname();
   const [searchTerm, setSearchTerm] = useState("");
   const [openMenu, setOpenMenu] = useState(false);
   const [showResults, setShowResults] = useState(false);
-
+  const searchDropDownRef = useRef<HTMLDivElement>(null);
   const [debouncedQuery] = useDebouncedValue(searchTerm, {
     wait: 500,
   });
   const { data: session } = authClient.useSession();
-  const { data: organizaions, error } = authClient.useListOrganizations();
   const { data: activeOrganization } = authClient.useActiveOrganization();
-
+  useEffect(() => {
+    if (!showResults) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (
+        searchDropDownRef.current &&
+        !searchDropDownRef.current.contains(event.target as Node)
+      ) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [showResults]);
   const { data } = useQuery({
     queryKey: ["search", debouncedQuery],
     queryFn: async () => {
@@ -29,7 +40,7 @@ const Navbar = () => {
       );
       return await response.json();
     },
-    enabled: searchTerm.trim().length > 0,
+    enabled: Boolean(debouncedQuery && debouncedQuery.trim().length > 0),
   });
 
   const { data: cartItems } = useQuery({
@@ -48,11 +59,14 @@ const Navbar = () => {
   return (
     <>
       {/* Desktop Navbar */}
-      <div className="hidden md:flex justify-between items-center px-4 -mt-5">
+      <div
+        ref={searchDropDownRef}
+        className="hidden md:flex justify-between items-center px-4 -mt-5"
+      >
         <Link href="/">
           <img src="/logo.PNG" className="h-20 object-cover" alt="Logo" />
         </Link>
-        <div className="flex gap-5 text-gray-400">
+        <div className="flex gap-5 text-gray-600 ">
           {navLinks.map((nav) => (
             <Link
               key={nav.href}
@@ -60,7 +74,7 @@ const Navbar = () => {
               className={`${
                 (nav.href === "/" ? path === "/" : path.startsWith(nav.href))
                   ? "text-orange-500 font-semibold bg-orange-500/10 py-1 shadow-xs shadow-orange-500 rounded-full "
-                  : "text-gray-400 hover:text-white"
+                  : " hover:text-orange-400 "
               } transition-colors px-5 font-medium`}
             >
               {nav.name}
@@ -81,11 +95,11 @@ const Navbar = () => {
               }}
               type="text"
               placeholder="Search product..."
-              className="w-full bg-white/5 pl-10 pr-4 py-2 rounded-full shadow-sm shadow-orange-500/30 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
+              className="w-full bg-white/5 pl-10 pr-4 py-2 rounded-full text-sm shadow-sm shadow-orange-500 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
             />
             {/* Results dropdown */}
             {showResults && data && data.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-gray-200 border border-gray-700/5 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
                 {data.map((sp: any, i: number) => (
                   <Link
                     key={i}
@@ -96,7 +110,9 @@ const Navbar = () => {
                     }}
                     className="block px-4 py-2 hover:bg-white/10 cursor-pointer"
                   >
-                    <p className="text-white">{sp.name || sp.brand}</p>
+                    <p className="text-gray-700 text-sm">
+                      {sp.name || sp.brand}
+                    </p>
                   </Link>
                 ))}
                 <p
@@ -117,21 +133,23 @@ const Navbar = () => {
           {!session ? (
             <Link
               href="/login"
-              className="hover:text-orange-500 transition-colors"
+              className="hover:text-orange-500 text-gray-600 transition-colors"
             >
               Login
             </Link>
           ) : (
             <div className="flex items-center gap-2">
-              <Link
-                href={`/dashboard/${activeOrganization?.slug}`}
-                className="hover:text-orange-500 transition-colors hover:bg-orange-500/20 p-2 rounded-full"
-              >
-                <Store size={20} />
-              </Link>
+              {activeOrganization && (
+                <Link
+                  href={`/dashboard/${activeOrganization?.slug}`}
+                  className=" text-gray-600 hover:text-orange-500 transition-colors hover:bg-orange-500/20 p-2 rounded-full"
+                >
+                  <Store size={20} />
+                </Link>
+              )}
               <Link
                 href="/account"
-                className="hover:text-orange-500 transition-colors hover:bg-orange-500/20 p-2 rounded-full"
+                className=" text-gray-600 hover:text-orange-500 transition-colors hover:bg-orange-500/20 p-2 rounded-full"
               >
                 <User size={20} />
               </Link>
@@ -139,7 +157,7 @@ const Navbar = () => {
           )}
           <button
             onClick={() => router.push("/cart")}
-            className="hover:text-orange-500 transition-colors relative"
+            className=" text-gray-600 hover:text-orange-500 transition-colors relative"
           >
             <ShoppingCart size={20} />
             <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
@@ -174,7 +192,7 @@ const Navbar = () => {
           />
           {/* Results dropdown */}
           {showResults && data && data.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-2 bg-gray-300 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
               {data.map((sp: any, i: number) => (
                 <Link
                   key={i}
@@ -248,7 +266,7 @@ const Navbar = () => {
           />
 
           {/* Sidebar */}
-          <div className="md:hidden fixed top-0 left-0 bottom-0 w-72 bg-black z-50 p-4">
+          <div className="md:hidden fixed top-0 left-0 bottom-0 w-72  z-50 p-4">
             {/* Close button */}
             <div className="flex justify-end">
               <button

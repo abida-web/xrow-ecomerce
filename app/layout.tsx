@@ -32,9 +32,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${roboto.variable} bg-black h-full antialiased`}
+      className={`${inter.variable} ${roboto.variable} bg-white text-black  h-full antialiased`}
     >
-      <body className="bg-black flex flex-col font-sans">
+      <body className=" flex flex-col font-sans">
         {children}
         <Toaster />
       </body>

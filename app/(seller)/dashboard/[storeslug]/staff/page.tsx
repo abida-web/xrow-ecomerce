@@ -48,10 +48,8 @@ const StaffPage = () => {
     "INVITITIONS",
   );
   const [openInviteModal, setOpenInviteModal] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { data: activeOrganization } = authClient.useActiveOrganization();
 
-  // Transform members data to match the Member interface
   const transformedMembers = useMemo<Member[]>(() => {
     if (!activeOrganization?.members) return [];
 
@@ -88,7 +86,6 @@ const StaffPage = () => {
     }
   };
 
-  // Fetch initial data
   useEffect(() => {
     if (activeOrganization?.id) {
       handleListInvitation();
@@ -153,67 +150,45 @@ const StaffPage = () => {
       toast.error("Failed to send invitation");
     }
   }
-
-  const handleRefresh = async () => {
-    if (isRefreshing) return;
-
-    setIsRefreshing(true);
-    try {
-      if (openTab === "INVITITIONS") {
-        await handleListInvitation();
-      } else {
-        toast.loading("Refreshing members...", { id: "refresh" });
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
-      }
-    } catch (error) {
-      console.error("Error refreshing:", error);
-      toast.error("Failed to refresh");
-    } finally {
-      setIsRefreshing(false);
-    }
+  const handleUpdateRole = async (memberId: string, role: string) => {
+    const { data: updatedRole, error } =
+      await authClient.organization.updateMemberRole({
+        role: role,
+        memberId: memberId,
+        organizationId: activeOrganization?.id,
+      });
   };
-
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-5 mt-5">
           <button
             onClick={() => setOpenTab("INVITITIONS")}
-            className={`font-semibold shadow shadow-gray-500 rounded-full py-1 px-5 transition-all duration-300 ${
-              openTab === "INVITITIONS" &&
-              "bg-orange-500 shadow-white text-white"
+            className={`font-semibold shadow-sm rounded-full py-1 px-5 transition-all duration-300 ${
+              openTab === "INVITITIONS"
+                ? "bg-orange-500 text-white shadow-orange-200"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
             Invitations
           </button>
           <button
             onClick={() => setOpenTab("MEMBERS")}
-            className={`font-semibold shadow shadow-gray-500 rounded-full py-1 px-5 transition-all duration-300 ${
-              openTab === "MEMBERS" && "bg-orange-500 shadow-white text-white"
+            className={`font-semibold shadow-sm rounded-full py-1 px-5 transition-all duration-300 ${
+              openTab === "MEMBERS"
+                ? "bg-orange-500 text-white shadow-orange-200"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
             Members
           </button>
         </div>
-        <div className="flex justify-between items-center gap-5">
-          <button
-            onClick={() => setOpenInviteModal(true)}
-            className="bg-gray-50 hover:bg-gray-300 px-4 py-2 text-black rounded-md text-sm font-medium transition-colors"
-          >
-            Invite
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className={`bg-blue-500 hover:bg-blue-600 px-4 py-2 text-white rounded-md text-sm font-medium transition-colors ${
-              isRefreshing ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            {isRefreshing ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
+        <button
+          onClick={() => setOpenInviteModal(true)}
+          className="bg-orange-500 hover:bg-orange-600 px-4 py-2 text-white rounded-md text-sm font-medium transition-colors"
+        >
+          Invite
+        </button>
       </div>
 
       {openTab === "INVITITIONS" && (
@@ -226,6 +201,7 @@ const StaffPage = () => {
         <MembersTab
           members={transformedMembers}
           handleRemoveMember={handleRemoveMember}
+          handleUpdateRole={handleUpdateRole}
         />
       )}
 

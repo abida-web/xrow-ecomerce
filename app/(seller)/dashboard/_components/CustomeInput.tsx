@@ -24,7 +24,7 @@ const CustomInput = ({
   const inputValue = value ?? "";
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={name} className="text-[14px] text-gray-400">
+      <label htmlFor={name} className="text-[14px] text-gray-600 font-medium">
         {label}
       </label>
       <input
@@ -36,7 +36,7 @@ const CustomInput = ({
         placeholder={placeholder}
         step={step}
         required={required}
-        className="bg-white/20 px-5 py-2 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+        className="bg-gray-50 px-5 py-2 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 border border-gray-200"
       />
     </div>
   );

@@ -72,6 +72,7 @@ export default function ProductDetailPage() {
     ],
     queryFn: () =>
       getRelatedProducts(product?.brand, product?.categoryId, product?.id),
+    enabled: Boolean(product?.id),
   });
   const { data: cartItems, isLoading: isCartLoading } = useQuery({
     queryKey: ["cart"],
@@ -507,6 +508,7 @@ export default function ProductDetailPage() {
                 category:
                   (product?.category && product.category.name) ||
                   "Uncategorized",
+                stock: Number(product.variants[0].stock),
                 price: Number(product.variants[0].price) || 0,
                 comparePriceAt: Number(product.variants[0].comparePriceAt) || 0,
                 organizationName: product.organization.name || "Unknown",

@@ -27,11 +27,14 @@ const Popular = ({
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((_, i) => (
-          <div key={i} className="bg-white/5 rounded-xl p-4 animate-pulse">
-            <div className="aspect-square bg-white/10 rounded-lg mb-3"></div>
-            <div className="h-4 bg-white/10 rounded w-3/4 mb-2"></div>
-            <div className="h-3 bg-white/10 rounded w-1/2 mb-2"></div>
-            <div className="h-4 bg-orange-500/30 rounded w-1/3"></div>
+          <div
+            key={i}
+            className="bg-white rounded-xl p-4 animate-pulse shadow-sm"
+          >
+            <div className="aspect-square bg-gray-200 rounded-lg mb-3"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-orange-200 rounded w-1/3"></div>
           </div>
         ))}
       </div>
@@ -39,7 +42,9 @@ const Popular = ({
 
   return (
     <div className="sm:px-4">
-      <h1 className="text-2xl py-5 font-bold">Popular Products</h1>
+      <h1 className="text-2xl py-5 font-bold text-gray-800">
+        Popular Products
+      </h1>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
         {topProducts?.map((product: TopProduct, i: number) => (
           <ProductCard

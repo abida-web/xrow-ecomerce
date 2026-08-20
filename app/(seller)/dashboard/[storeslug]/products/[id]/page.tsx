@@ -36,7 +36,6 @@ const ProductDetailPage = () => {
     null,
   );
 
-  // Get both currentVariant and productForm from the store
   const {
     currentVariant,
     setCurrentVariant,
@@ -183,7 +182,7 @@ const ProductDetailPage = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="inline-block w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-        <span className="ml-3 text-gray-400">Loading variants...</span>
+        <span className="ml-3 text-gray-500">Loading variants...</span>
       </div>
     );
   }
@@ -191,7 +190,7 @@ const ProductDetailPage = () => {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-400">Error loading variants: {error.message}</p>
+        <p className="text-red-500">Error loading variants: {error.message}</p>
       </div>
     );
   }
@@ -199,10 +198,10 @@ const ProductDetailPage = () => {
   if (!data?.variantsList || data.variantsList.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-400">No variants found for this product.</p>
+        <p className="text-gray-500">No variants found for this product.</p>
         <button
           onClick={handleAddClick}
-          className="mt-4 bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg transition-colors"
+          className="mt-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors"
         >
           Add First Variant
         </button>
@@ -214,20 +213,22 @@ const ProductDetailPage = () => {
     <div>
       <button
         onClick={handleAddClick}
-        className="text-green-400 mb-3 flex items-center gap-2 bg-white rounded-full py-1 px-3 transition-colors hover:bg-white/10"
+        className="text-orange-500 mb-3 flex items-center gap-2 bg-white border border-orange-200 rounded-full py-1 px-3 transition-colors hover:bg-orange-50"
       >
         <Plus size={15} />
         Add Variant
       </button>
-      <div className="overflow-x-auto rounded-lg border border-white/10">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
         <table className="w-full text-sm">
-          <thead className="bg-white/5 border-b border-white/10">
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr className="text-left">
-              <th className="px-4 py-3 font-medium">Variant</th>
-              <th className="px-4 py-3 font-medium">SKU</th>
-              <th className="px-4 py-3 font-medium">Price</th>
-              <th className="px-4 py-3 font-medium">Stock</th>
-              <th className="px-4 py-3 font-medium text-center">Actions</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Variant</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">SKU</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Price</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Stock</th>
+              <th className="px-4 py-3 font-semibold text-gray-700 text-center">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -251,26 +252,32 @@ const ProductDetailPage = () => {
               return (
                 <tr
                   key={variant.id}
-                  className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                 >
-                  <td className="px-4 py-3 font-medium">{variantName}</td>
-                  <td className="px-4 py-3">{variant.sku || "N/A"}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 font-medium text-gray-800">
+                    {variantName}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {variant.sku || "N/A"}
+                  </td>
+                  <td className="px-4 py-3 text-gray-700">
                     ${Number(variant.price || 0).toFixed(2)}
                   </td>
-                  <td className="px-4 py-3">{Number(variant.stock || 0)}</td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {Number(variant.stock || 0)}
+                  </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => handleEditClick(transformedVariant)}
-                        className="text-xs flex gap-2 bg-orange-500 hover:bg-orange-600 px-2 py-1 rounded-sm font-medium transition-colors"
+                        className="text-xs flex gap-2 bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
                       >
                         <Edit3 size={15} />
                         Edit
                       </button>
                       <button
                         onClick={() => handleDeleteVariant(variant.id)}
-                        className="text-red-400 hover:bg-red-500/20 rounded-full p-2 hover:text-red-300 transition-colors"
+                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full p-2 transition-colors"
                       >
                         <Trash2Icon size={15} />
                       </button>
@@ -286,14 +293,14 @@ const ProductDetailPage = () => {
       {/* Modal */}
       {openModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
             <div className="flex justify-between items-center mb-4">
-              <h1 className="font-semibold text-xl">
+              <h1 className="font-semibold text-xl text-gray-800">
                 {type === "add" ? "Add New Variant" : "Edit Variant"}
               </h1>
               <button
                 onClick={handleCloseModal}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 ✕
               </button>
@@ -306,7 +313,7 @@ const ProductDetailPage = () => {
                   : (e) => handleUpdateVariant(e, selectedVariantId!)
               }
             >
-              <div className="bg-white/5 rounded-lg p-5">
+              <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
                 <div className="grid gap-5 md:grid-cols-3 grid-cols-2">
                   <CustomInput
                     label="SKU"
@@ -383,7 +390,7 @@ const ProductDetailPage = () => {
                 {/* Product Options */}
                 {data?.options && data.options.length > 0 && (
                   <div className="mt-5">
-                    <h2 className="font-semibold mb-3">
+                    <h2 className="font-semibold text-gray-800 mb-3">
                       Product Options
                       <span className="text-xs text-gray-400 ml-2">
                         (select values for this variant)
@@ -395,18 +402,14 @@ const ProductDetailPage = () => {
                         <div key={opt.id} className="space-y-1.5">
                           <label
                             htmlFor={`option-${opt.id}`}
-                            className="block text-sm font-medium text-white/90"
+                            className="block text-sm font-medium text-gray-700"
                           >
                             {opt.name}
                           </label>
                           <select
                             id={`option-${opt.id}`}
-                            className="w-full bg-white/10 backdrop-blur-sm border border-white/20 
-                                     px-4 py-2.5 rounded-xl text-white 
-                                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                                     hover:bg-white/15 transition-all duration-200
-                                     appearance-none cursor-pointer"
-                            value={currentVariant.optionValues?.[index] || ""} //use options itself not variant options
+                            className="w-full bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:bg-gray-100 transition-all duration-200 appearance-none cursor-pointer"
+                            value={currentVariant.optionValues?.[index] || ""}
                             onChange={(e) => {
                               const values = [...currentVariant.optionValues];
                               values[index] = e.target.value;
@@ -416,14 +419,14 @@ const ProductDetailPage = () => {
                               });
                             }}
                           >
-                            <option value="" className="bg-gray-900 text-white">
+                            <option value="" className="bg-white text-gray-800">
                               Select {opt.name}
                             </option>
                             {opt.values?.map((val) => (
                               <option
                                 key={val.id}
                                 value={val.value}
-                                className="bg-gray-900 text-white py-1"
+                                className="bg-white text-gray-800 py-1"
                               >
                                 {val.value}
                               </option>
@@ -439,7 +442,7 @@ const ProductDetailPage = () => {
               <button
                 type="submit"
                 disabled={createmutation.isPending || updatemutation.isPending}
-                className="mt-5 bg-orange-500 hover:bg-orange-600 py-2 flex justify-center items-center gap-2 rounded-lg w-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-5 bg-orange-500 hover:bg-orange-600 text-white py-2 flex justify-center items-center gap-2 rounded-lg w-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {createmutation.isPending || updatemutation.isPending ? (
                   <>

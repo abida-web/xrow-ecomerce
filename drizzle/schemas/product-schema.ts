@@ -145,3 +145,15 @@ export {
   productOptions,
   productOptionValues,
 };
+
+export const notification = pgTable("notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  shopId: text("shop_id").references(() => organization.id),
+  type: text("type"),
+  title: text("title"),
+  message: text("message"),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
