@@ -16,11 +16,11 @@ export default function StoreCatchAllPage() {
     queryFn: () => getStoreRelatedPages(storeslug),
   });
 
-  const pathSegments = params.path ?? [];
+  const pathSegments: any = params.path ?? [];
   const page =
     pathSegments?.length === 0
       ? pagesDataList?.find((p) => p.type === "home")
-      : pagesDataList?.find((pa) => pa.slug === pathSegments?.join("/"));
+      : pagesDataList?.find((pa: any) => pa.slug === pathSegments?.join("/"));
 
   return (
     <div className="flex flex-col gap-5">

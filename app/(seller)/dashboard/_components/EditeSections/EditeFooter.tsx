@@ -9,6 +9,22 @@ const EditeFooter = ({
   updateContent,
   handleUpdateSection,
 }: any) => {
+  const updateLinks = (key: string, value: string, index: number) => {
+    const updatedlinks = content.links.map((link: any, i: number) =>
+      i === index ? { ...link, [key]: value } : link,
+    );
+    updateContent(selectedSection.id, { links: updatedlinks });
+  };
+  const deleteLinks = (index: number) => {
+    updateContent(selectedSection.id, {
+      links: content.links?.filter((_: any, i: number) => i !== index),
+    });
+  };
+  const addLink = () => {
+    updateContent(selectedSection.id, {
+      links: [...content.links, { label: "", url: "" }],
+    });
+  };
   return (
     <div className="flex flex-col gap-2">
       <h1 className="mt-3 text-sm font-semibold text-orange-500">
@@ -248,6 +264,46 @@ const EditeFooter = ({
           updateContent(selectedSection.id, { description: value })
         }
       />
+      {content.links.map((link: any, index: number) => (
+        <div
+          key={index}
+          className="border border-gray-200 rounded-md p-2 flex flex-col gap-2"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-gray-500">
+              #{index + 1}
+            </span>
+            <button
+              onClick={() => deleteLinks(index)}
+              className="text-xs text-red-500 hover:text-red-700"
+            >
+              Remove
+            </button>
+          </div>
+
+          <TextField
+            label="Label"
+            className={"w-10"}
+            value={link.label || ""}
+            onChange={(value: any) => updateLinks("label", value, index)}
+          />
+          <TextField
+            label="URL"
+            onChange={(value: any) => updateLinks("url", value, index)}
+            className={"w-10"}
+            value={link.url || ""}
+          />
+        </div>
+      ))}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-semibold text-gray-700">FAQ Items</h2>
+        <button
+          onClick={addLink}
+          className="text-xs bg-orange-200 hover:bg-orange-500 hover:text-white transition-all px-2 py-1 rounded"
+        >
+          + Add
+        </button>
+      </div>
       <TextField
         label="Copyright"
         value={content.copyright || ""}

@@ -8,7 +8,6 @@ import { ShoppingCart, User, Menu, X } from "lucide-react";
 import { Dispatch, SetStateAction, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
-// Define a proper type for the page
 interface PageType {
   id?: string;
   name?: string;
@@ -22,12 +21,14 @@ const StoreRerenderer = ({
   setSelectedSectionId,
   selectedSectionId,
   sections: stateSections,
+  onRemoveSection,
 }: {
-  selectedPage: PageType | null; // Updated type
+  selectedPage: PageType | null;
   type: string;
   setSelectedSectionId?: Dispatch<SetStateAction<string | null>>;
   selectedSectionId?: string | null;
   sections?: any;
+  onRemoveSection?: (sectionId: string) => void;
 }) => {
   const { data: activeOrganization } = authClient.useActiveOrganization();
   const params = useParams();
@@ -79,8 +80,26 @@ const StoreRerenderer = ({
             boxShadow:
               defaultSettings?.shadow || "0 1px 2px 0 rgb(0 0 0 / 0.05)",
           }}
-          className={`${selectedSectionId === navbar?.id ? "border-2 border-sky-600" : ""}`}
+          className={`relative ${
+            selectedSectionId === navbar?.id ? "border-2 border-sky-600" : ""
+          }`}
         >
+          {/* Cross for navbar when selected */}
+          {selectedSectionId === navbar?.id && onRemoveSection && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm("Remove the navbar section?")) {
+                  onRemoveSection(navbar?.id || "");
+                }
+              }}
+              title="Remove section"
+              className="absolute top-2 right-2 z-50 w-7 h-7 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white shadow-md transition-colors"
+            >
+              <X size={14} strokeWidth={3} />
+            </button>
+          )}
+
           <div
             className="container mx-auto flex items-center justify-between relative"
             style={{
@@ -100,7 +119,6 @@ const StoreRerenderer = ({
                 fontWeight: defaultSettings?.logoWeight || 700,
               }}
             >
-              {" "}
               <img
                 src={
                   activeOrganization?.logo &&
@@ -265,18 +283,42 @@ const StoreRerenderer = ({
       )}
 
       {/* Render sections */}
-      <div className=" flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
         {renderSections.map((sec: any, index: number) => {
           const Component = (
             sectionComponents as Record<string, React.ComponentType<any>>
           )[sec.name];
           if (!Component) return null;
+          const isSelected = selectedSectionId === sec.id;
+
           return (
             <div
               key={sec.id || `section-${index}`}
-              className={`${selectedSectionId === sec.id ? "border-2 border-sky-600" : ""}`}
+              className={`relative ${
+                isSelected ? "border-2 border-sky-600" : ""
+              }`}
               onClick={() => isEditMode && setSelectedSectionId?.(sec.id)}
             >
+              {/* Cross on the blue border — only when selected */}
+              {isEditMode && isSelected && onRemoveSection && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (
+                      confirm(
+                        `Remove section "${sec.name}"? This cannot be undone.`,
+                      )
+                    ) {
+                      onRemoveSection(sec.id);
+                    }
+                  }}
+                  title="Remove section"
+                  className="absolute top-2 right-2 z-50 w-7 h-7 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white shadow-md transition-colors"
+                >
+                  <X size={14} strokeWidth={3} />
+                </button>
+              )}
+
               <Component settings={sec} storeslug={storeslug} />
             </div>
           );

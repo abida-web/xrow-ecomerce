@@ -16,8 +16,6 @@ const StoreFooter = ({ settings, storeslug }: any) => {
   const gap = defaultSettings?.gap ?? 32;
   const linkSpacing = defaultSettings?.linkSpacing ?? 8;
 
-  // Brand takes 2 columns (wider), links take the rest
-  // Total grid: `columns` slots, brand spans 2
   const gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
   const { data: activeOrganization } = authClient.useActiveOrganization();
 
@@ -165,20 +163,6 @@ const StoreFooter = ({ settings, storeslug }: any) => {
 
         {/* Bottom: Payment + Copyright */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          {defaultSettings.paymentIcons && paymentMethods.length > 0 && (
-            <div className="flex items-center gap-3">
-              {paymentMethods.map((method: string, index: number) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 rounded bg-white/10 text-xs capitalize"
-                  style={{ color: defaultSettings.textColor || "#ffffff" }}
-                >
-                  {method}
-                </span>
-              ))}
-            </div>
-          )}
-
           {defaultContent.copyright && (
             <p
               style={{

@@ -215,3 +215,22 @@ export const getRecentReviewsForTestimonials = async (storeslug: string) => {
   });
   return reviews;
 };
+export const removeSection = async (
+  storeslug: string,
+  sectionId: string | null,
+) => {
+  const organizationData = await getOrganizationBySlug(storeslug);
+  if (!organizationData) {
+    throw new Error("Oranization doesn't exists");
+  }
+  if (!sectionId) return;
+  const deleteSection = await db
+    .delete(storeFrontSections)
+    .where(
+      and(
+        eq(storeFrontSections.id, sectionId),
+        eq(storeFrontSections.organizationId, organizationData.id),
+      ),
+    );
+  return { success: true };
+};

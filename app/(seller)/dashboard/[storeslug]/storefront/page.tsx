@@ -1,19 +1,22 @@
 "use client";
 
-import { ChevronRight, Edit2, Edit3, Settings } from "lucide-react";
+import { Edit2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Editebar from "../../_components/Editebar";
-import { useQuery } from "@tanstack/react-query";
-import { getStoreRelatedPages } from "@/app/actions/individualStore";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  getStoreRelatedPages,
+  removeSection,
+} from "@/app/actions/individualStore";
 import StoreRerenderer from "@/app/(store)/[storeslug]/_components/StoreRerenderer";
+import toast from "react-hot-toast";
 
-// Define a proper type for the page
 interface PageType {
   id?: string;
   name?: string;
   sections?: any[];
-  [key: string]: any; // Allow other properties
+  [key: string]: any;
 }
 
 const StorefrontPage = () => {
@@ -26,6 +29,7 @@ const StorefrontPage = () => {
 
   const params = useParams();
   const storeslug = String(params.storeslug);
+  const queryClient = useQueryClient();
 
   const {
     data: pagesDataList,
@@ -36,8 +40,29 @@ const StorefrontPage = () => {
     queryFn: () => getStoreRelatedPages(storeslug),
   });
 
+  // Central remove mutation — used by StoreRerenderer's cross
+  const removeSectionMutation = useMutation({
+    mutationFn: async (sectionId: string) => {
+      const res = await removeSection(storeslug, sectionId);
+      return res;
+    },
+    onSuccess: () => {
+      setSelectedSectionId(null);
+      queryClient.invalidateQueries({ queryKey: ["pages", storeslug] });
+      refetch();
+      toast.success("Section removed");
+    },
+    onError: (error) => {
+      console.error("Failed to remove section:", error);
+      toast.error("Failed to remove section");
+    },
+  });
+
+  const handleRemoveSection = (sectionId: string) => {
+    removeSectionMutation.mutate(sectionId);
+  };
+
   useEffect(() => {
-    // Only open on large screens
     const isLargeScreen = window.innerWidth >= 1024;
     setOpenSettings(isLargeScreen);
   }, []);
@@ -82,6 +107,7 @@ const StorefrontPage = () => {
                     selectedSectionId={selectedSectionId}
                     selectedPage={selectedPage}
                     sections={sections}
+                    onRemoveSection={handleRemoveSection}
                   />
                 )}
               </div>
@@ -90,10 +116,9 @@ const StorefrontPage = () => {
         </main>
       </div>
 
-      {/* Floating toggle button - fixed position */}
       <button
         onClick={toggleSettings}
-        className="fixed bottom-4 right-4  bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-all duration-200 z-50"
+        className="fixed bottom-4 right-4 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-all duration-200 z-50"
         type="button"
         aria-label="Toggle settings"
       >

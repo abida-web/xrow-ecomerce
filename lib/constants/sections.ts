@@ -843,7 +843,6 @@ export const SECTION_TEMPLATES_DATA = (org: any) => [
         },
         { platform: "YouTube", url: "https://youtube.com", icon: "youtube" },
       ],
-      paymentMethods: ["visa", "mastercard", "paypal", "applepay"],
       copyright: `© 2024 ${org?.name || "Your Store"}. All rights reserved.`,
     },
   },

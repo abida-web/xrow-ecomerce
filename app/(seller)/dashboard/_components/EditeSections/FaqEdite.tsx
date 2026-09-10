@@ -252,11 +252,13 @@ const FaqEdite = ({
           </div>
 
           <TextField
+            className={"w-10"}
             label="Question"
             value={faq.question || ""}
             onChange={(value: any) => updateFaq(index, "question", value)}
           />
           <TextField
+            className={"w-10"}
             label="Answer"
             value={faq.answer || ""}
             onChange={(value: any) => updateFaq(index, "answer", value)}

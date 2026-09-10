@@ -3,6 +3,7 @@ import {
   createPageForStore,
   creatSectionForPage,
   getStoreRelatedPages,
+  removeSection,
   updateSectionForPage,
 } from "@/app/actions/individualStore";
 import { SECTION_TEMPLATES_DATA } from "@/lib/constants/sections";
@@ -77,9 +78,6 @@ const Editebar = ({
   const selectedSection = sections?.find(
     (sec: any) => sec?.id === selectedSectionId,
   );
-
-  const router = useRouter();
-
   const queryClient = useQueryClient();
 
   const addPageMutation = useMutation({
@@ -120,6 +118,22 @@ const Editebar = ({
     },
     onError: (error) => {
       console.error("Failed to create section:", error);
+    },
+  });
+  const removeSectionMutation = useMutation({
+    mutationFn: async (sectionId: string) => {
+      const res = await removeSection(storeslug, sectionId);
+      return res;
+    },
+    onSuccess: () => {
+      setSelectedSectionId(null);
+      queryClient.invalidateQueries({ queryKey: ["pages", storeslug] });
+      refetch();
+      toast.success("Section removed");
+    },
+    onError: (error) => {
+      console.error("Failed to remove section:", error);
+      toast.error("Failed to remove section");
     },
   });
   const updateSectionMutation = useMutation({
@@ -283,15 +297,43 @@ const Editebar = ({
                               <div
                                 key={sec.id}
                                 onClick={() => setSelectedSectionId(sec.id)}
-                                className={`text-xs py-0.5 px-2 text-gray-700 rounded hover:bg-orange-50 cursor-pointer transition-colors flex items-center justify-between ${
+                                className={`relative group text-xs py-1.5 px-2 text-gray-700 rounded hover:bg-orange-50 cursor-pointer transition-colors flex items-center justify-between ${
                                   selectedSectionId === sec.id &&
-                                  "bg-blue-600 text-white"
+                                  "bg-blue-600 text-white hover:bg-blue-600"
                                 }`}
                               >
-                                <span className="">{sec.name}</span>
-                                <button className="text-green-500 hover:text-green-600 transition-colors px-1.5 py-0.5 rounded disabled:opacity-50 disabled:cursor-not-allowed">
-                                  <CircleCheck className="w-4 h-4" />
-                                </button>
+                                <span className="truncate pr-1">
+                                  {sec.name}
+                                </span>
+
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                  <button className="text-green-500 hover:text-green-600 transition-colors px-1 py-0.5 rounded">
+                                    <CircleCheck className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  {/* Small cross for removing the section */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (
+                                        confirm(
+                                          `Remove section "${sec.name}"? This cannot be undone.`,
+                                        )
+                                      ) {
+                                        removeSectionMutation.mutate(sec.id);
+                                      }
+                                    }}
+                                    disabled={removeSectionMutation.isPending}
+                                    title="Remove section"
+                                    className={`w-5 h-5 flex items-center justify-center rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                                      selectedSectionId === sec.id
+                                        ? "text-white/80 hover:text-white hover:bg-red-500"
+                                        : "text-gray-400 hover:text-white hover:bg-red-500"
+                                    }`}
+                                  >
+                                    <X size={12} strokeWidth={2.5} />
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
