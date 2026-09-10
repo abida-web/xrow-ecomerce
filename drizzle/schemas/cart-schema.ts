@@ -6,7 +6,12 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { organization, user } from "./auth-schema";
+import {
+  organization,
+  shippingMethods,
+  shippingRates,
+  user,
+} from "./auth-schema";
 import { products, variants } from "./product-schema";
 
 export const cart = pgTable("cart", {
@@ -37,6 +42,15 @@ export const order = pgTable("order", {
   status: text("status"),
   subtotal: numeric("subtotal"),
   total: numeric("total"),
+  shippingMethodId: uuid("shipping_method_id").references(
+    () => shippingMethods.id,
+    { onDelete: "set null" },
+  ),
+  shippingRateId: uuid("shipping_rate_id").references(() => shippingRates.id, {
+    onDelete: "set null",
+  }),
+  shippingMethodName: text("shipping_method_name"),
+  shippingRateName: text("shipping_rate_name"),
   shippingFullName: text("shipping_full_name"),
   shippingPhone: text("shipping_phone"),
   shippingEmail: text("shipping_email"),

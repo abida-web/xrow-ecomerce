@@ -18,11 +18,20 @@ import {
   variantImages,
   variantOptionValues,
   notification,
+  organizationTables,
+  shippingMethods,
+  shippingZones,
+  shippingRates,
+  productReviews,
+  storeCategories,
+  storeFrontSections,
+  storeFrontPages,
 } from "./schema";
 
 // ============ CATEGORY RELATIONS ============
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
+  storeCategories: many(storeCategories),
 }));
 
 // ============ PRODUCT RELATIONS ============
@@ -38,6 +47,7 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   variants: many(variants),
   images: many(productImages),
   options: many(productOptions),
+  reviews: many(productReviews),
 }));
 
 // ============ PRODUCT OPTIONS RELATIONS ============
@@ -161,6 +171,10 @@ export const orderItemRelations = relations(orderItem, ({ one }) => ({
     fields: [orderItem.variantId],
     references: [variants.id],
   }),
+  review: one(productReviews, {
+    fields: [orderItem.id],
+    references: [productReviews.orderItemId],
+  }),
 }));
 
 // ============ ADDRESS RELATIONS ============
@@ -180,8 +194,114 @@ export const notificationRelations = relations(notification, ({ one }) => ({
     references: [organization.id],
   }),
 }));
+// In db/relations.ts - Add this new relation
+export const organizationTablesRelations = relations(
+  organizationTables,
+  ({ one }) => ({
+    organization: one(organization, {
+      fields: [organizationTables.organizationId],
+      references: [organization.id],
+    }),
+  }),
+);
+// ============ SHIPPING METHODS RELATIONS ============
+export const shippingMethodsRelations = relations(
+  shippingMethods,
+  ({ one, many }) => ({
+    organization: one(organization, {
+      fields: [shippingMethods.organizationId],
+      references: [organization.id],
+    }),
+    rates: many(shippingRates),
+  }),
+);
+
+// ============ SHIPPING ZONES RELATIONS ============
+export const shippingZonesRelations = relations(
+  shippingZones,
+  ({ one, many }) => ({
+    organization: one(organization, {
+      fields: [shippingZones.organizationId],
+      references: [organization.id],
+    }),
+    rates: many(shippingRates),
+  }),
+);
+
+// ============ SHIPPING RATES RELATIONS ============
+export const shippingRatesRelations = relations(shippingRates, ({ one }) => ({
+  shippingMethod: one(shippingMethods, {
+    fields: [shippingRates.shippingMethodId],
+    references: [shippingMethods.id],
+  }),
+  shippingZone: one(shippingZones, {
+    fields: [shippingRates.shippingZoneId],
+    references: [shippingZones.id],
+  }),
+}));
+// ============ PRODUCT REVIEWS RELATIONS ============
+export const productReviewsRelations = relations(
+  productReviews,
+  ({ one, many }) => ({
+    product: one(products, {
+      fields: [productReviews.productId],
+      references: [products.id],
+    }),
+    organization: one(organization, {
+      fields: [productReviews.organizationId],
+      references: [organization.id],
+    }),
+    user: one(user, {
+      fields: [productReviews.userId],
+      references: [user.id],
+    }),
+    orderItem: one(orderItem, {
+      fields: [productReviews.orderItemId],
+      references: [orderItem.id],
+    }),
+  }),
+);
+// ============ STORE CATEGORIES RELATIONS ============
+export const storeCategoriesRelations = relations(
+  storeCategories,
+  ({ one, many }) => ({
+    organization: one(organization, {
+      fields: [storeCategories.organizationId],
+      references: [organization.id],
+    }),
+    globalCategory: one(categories, {
+      fields: [storeCategories.globalCategoryId],
+      references: [categories.id],
+    }),
+    // If store categories can have products directly:
+    products: many(products),
+  }),
+);
+// ============ STORE FRONT PAGES RELATIONS ============
+export const storeFrontPagesRelations = relations(
+  storeFrontPages,
+  ({ one, many }) => ({
+    organization: one(organization, {
+      fields: [storeFrontPages.organizationId],
+      references: [organization.id],
+    }),
+    sections: many(storeFrontSections),
+  }),
+);
+
+// ============ STORE FRONT SECTIONS RELATIONS ============
+export const storeFrontSectionsRelations = relations(
+  storeFrontSections,
+  ({ one }) => ({
+    page: one(storeFrontPages, {
+      fields: [storeFrontSections.pageId],
+      references: [storeFrontPages.id],
+    }),
+  }),
+);
 // Export all relations
 export const allRelations = {
+  organizationTablesRelations,
   categoriesRelations,
   productsRelations,
   productOptionsRelations,

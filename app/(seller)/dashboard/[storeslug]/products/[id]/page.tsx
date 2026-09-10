@@ -1,30 +1,18 @@
 "use client";
 
-import { getVariantsList, removeVariant } from "@/app/actions/product-actions";
+import {
+  deleteImageFromUploadthing,
+  getVariantsList,
+  removeVariant,
+} from "@/app/actions/product-actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bookmark, Edit3, LayersPlus, Plus, Trash2Icon } from "lucide-react";
+import { Bookmark, Edit3, LayersPlus, Plus, Trash2Icon, X } from "lucide-react";
 import { useParams } from "next/navigation";
 import React, { useState } from "react";
 import CustomInput from "../../../_components/CustomeInput";
 import { useProduct } from "@/store/product-store";
 import toast from "react-hot-toast";
-
-interface Variant {
-  id: string;
-  productId: string;
-  sku: string;
-  price: string | number;
-  stock: string | number;
-  status: string;
-  option1?: string;
-  option1Value?: string;
-  option2?: string;
-  option2Value?: string;
-  option3?: string;
-  option3Value?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+import { UploadButton } from "@/lib/utils/uploadthing";
 
 const ProductDetailPage = () => {
   const params = useParams();
@@ -44,7 +32,7 @@ const ProductDetailPage = () => {
   } = useProduct();
 
   const { isPending, data, error, refetch } = useQuery({
-    queryKey: ["getVariants", productId, storeslug],
+    queryKey: ["variants", productId, storeslug],
     queryFn: () => getVariantsList(storeslug, productId),
     enabled: !!productId,
   });
@@ -52,29 +40,41 @@ const ProductDetailPage = () => {
   const handleDeleteVariant = async (variantId: string) => {
     const res = await removeVariant({ storeslug, variantId });
     if (res.success) {
-      refetch();
       toast.success("Variant deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["product"] });
     } else {
       toast.error("Failed to delete variant");
     }
   };
-
   const handleEditClick = (variant: any) => {
+    console.log("Edit clicked, variant data:", variant); // Debug - see what's actually passed
+
+    // Check both variantImages and images
+    const images = variant.variantImages || variant.images || [];
+    console.log("Images found:", images); // Debug
+
     setCurrentVariant({
       sku: variant.sku || "",
       price: String(variant.price || ""),
       stock: String(variant.stock || ""),
       comparePriceAt: variant.comparePriceAt || "",
       costPrice: variant.costPrice || "",
-      variantImages: variant.variantImages || [],
-      optionValues: variant.optionValues || [],
+      variantImages: images.map((img: any) => ({
+        url: img.url,
+        filekey: img.key || img.filekey || img.fileKey || null,
+        fileKey: img.key || img.filekey || img.fileKey || null,
+        isPrimary: img.isPrimary || false,
+      })),
+      optionValues:
+        variant.optionValues?.map(
+          (val: any) => val.productOptionValue?.value || val.value || "",
+        ) || [],
     });
 
     setSelectedVariantId(variant.id);
     setOpenModal(true);
     setType("edit");
   };
-
   const handleAddClick = () => {
     setCurrentVariant({
       sku: "",
@@ -122,7 +122,7 @@ const ProductDetailPage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["getVariants", productId, storeslug],
+        queryKey: ["variants", productId, storeslug],
       });
       toast.success("Variant created successfully");
       handleCloseModal();
@@ -132,6 +132,15 @@ const ProductDetailPage = () => {
       toast.error(error.message || "Failed to create variant");
     },
   });
+
+  const removeImage = async (url: string) => {
+    const res = await deleteImageFromUploadthing(url);
+    if (res?.success) {
+      toast.success("Image deleted successfully");
+    } else {
+      toast.error("Failed to delete image");
+    }
+  };
 
   const updatemutation = useMutation({
     mutationFn: async (varId: string) => {
@@ -153,7 +162,7 @@ const ProductDetailPage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["getVariants", productId, storeslug],
+        queryKey: ["variants", productId, storeslug],
       });
       toast.success("Variant updated successfully");
       handleCloseModal();
@@ -247,6 +256,7 @@ const ProductDetailPage = () => {
                 comparePriceAt: variant.comparePriceAt,
                 costPrice: variant.costPrice,
                 optionValues: variant.optionValues || [],
+                variantImages: variant.images || [],
               };
 
               return (
@@ -438,7 +448,90 @@ const ProductDetailPage = () => {
                   </div>
                 )}
               </div>
+              <div className="mt-5">
+                <h2 className="font-semibold text-gray-800 mb-3">
+                  Variant Images
+                </h2>
 
+                {currentVariant.variantImages &&
+                currentVariant.variantImages.length > 0 ? (
+                  <div className="grid grid-cols-4 gap-3 mb-4">
+                    {currentVariant.variantImages.map((img: any, i: number) => (
+                      <div key={i} className="relative group">
+                        <img
+                          src={img.url || img.thumb}
+                          alt={`Variant ${i + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newImages =
+                              currentVariant.variantImages.filter(
+                                (_, index) => index !== i,
+                              );
+                            setCurrentVariant({
+                              ...currentVariant,
+                              variantImages: newImages,
+                            });
+
+                            if (img.url) {
+                              removeImage(img.url);
+                            }
+                          }}
+                          className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <X size={14} className="text-white" />
+                        </button>
+                        {img.isPrimary && (
+                          <div className="absolute top-1 left-1 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded">
+                            Primary
+                          </div>
+                        )}
+                        <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-2 py-0.5 rounded">
+                          #{i + 1}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-500 text-sm py-4 text-center border-2 border-dashed border-gray-200 rounded-lg mb-4">
+                    No variant images uploaded yet
+                  </div>
+                )}
+              </div>
+              <UploadButton
+                endpoint="imageUploader"
+                onClientUploadComplete={(res) => {
+                  if (res && res.length > 0) {
+                    const newImages = res.map((file) => ({
+                      url: file.url,
+                      isPrimary: currentVariant.variantImages.length === 0, // Set the first uploaded image as primary if no images exist
+                      filekey: file.key,
+                    }));
+
+                    setCurrentVariant({
+                      ...currentVariant,
+                      variantImages: [
+                        ...currentVariant.variantImages,
+                        ...newImages,
+                      ],
+                    });
+
+                    toast.success(
+                      `${res.length} image(s) uploaded successfully`,
+                    );
+                  }
+                }}
+                onUploadError={(error: Error) => {
+                  toast.error(`Upload failed: ${error.message}`);
+                }}
+                appearance={{
+                  button:
+                    "bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg w-full transition-colors",
+                  container: "w-full",
+                }}
+              />
               <button
                 type="submit"
                 disabled={createmutation.isPending || updatemutation.isPending}

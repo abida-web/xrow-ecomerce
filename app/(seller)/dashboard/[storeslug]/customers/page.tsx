@@ -5,6 +5,7 @@ import { Search, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
+import { authClient } from "@/lib/auth-client";
 interface CustomerProps {
   customer: string;
   email: string;
@@ -18,6 +19,8 @@ const CustomersPage = () => {
   const storeslug = String(params.storeslug);
   const [customers, setCustomers] = useState<CustomerProps[] | []>([]);
   const [search, setSearch] = useState("");
+  const { data: activeOrganization } = authClient.useActiveOrganization();
+
   const [debouncedSearch] = useDebouncedValue(search, { wait: 500 });
   async function fetchCustomers() {
     const res = await getCustomers(storeslug, debouncedSearch);
@@ -73,7 +76,8 @@ const CustomersPage = () => {
                 <td className="px-4 py-3 text-gray-600">{cus.phone || "—"}</td>
                 <td className="px-4 py-3 text-gray-600">{cus.orders}</td>
                 <td className="px-4 py-3 text-gray-700 font-medium">
-                  AFN {cus.total?.toLocaleString() || "0"}
+                  {activeOrganization?.currency}{" "}
+                  {cus.total?.toLocaleString() || "0"}
                 </td>
                 <td className="px-4 py-3 text-gray-500">
                   {cus.lastOrderDate

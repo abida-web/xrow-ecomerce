@@ -1,18 +1,22 @@
 "use server";
-
+import { UTApi } from "uploadthing/server";
 import { db } from "@/drizzle/db";
 import {
   categories,
   order,
   orderItem,
   organization,
+  organizationTables,
   productImages,
   productOptions,
   productOptionValues,
+  productReviews,
   products,
+  storeCategories,
   user,
   variants,
 } from "@/drizzle/schema";
+import { auth } from "@/lib/auth";
 import { getOrganizationBySlug } from "@/lib/organization-check";
 import { table } from "console";
 import {
@@ -21,18 +25,85 @@ import {
   count,
   desc,
   eq,
+  gt,
   ilike,
+  max,
   min,
   ne,
   or,
   sql,
   sum,
 } from "drizzle-orm";
+import { headers } from "next/headers";
 import { string } from "zod";
 
 export const getCategories = async () => {
-  const list = await db.query.categories.findMany();
+  const list = await db.query.categories.findMany({
+    with: {
+      storeCategories: true,
+    },
+  });
   return list;
+};
+export const removeStoreCategory = async (storeslug: string, catId: string) => {
+  const organizationData = await getOrganizationBySlug(storeslug);
+  if (!organizationData) {
+    throw new Error("Oranization doesn't exists");
+  }
+  const removeCat = await db
+    .delete(storeCategories)
+    .where(
+      and(
+        eq(storeCategories.organizationId, organizationData.id),
+        eq(storeCategories.id, catId),
+      ),
+    );
+  return { success: true };
+};
+export const addNewStoreCategory = async (
+  storeslug: string,
+  category: {
+    globalCategoryId: string;
+    name: string;
+    icon: string;
+  },
+) => {
+  const organizationData = await getOrganizationBySlug(storeslug);
+  if (!organizationData) {
+    throw new Error("Oranization doesn't exists");
+  }
+  const newStoreCategory = await db.insert(storeCategories).values({
+    organizationId: organizationData.id,
+    globalCategoryId: category.globalCategoryId,
+    name: category.name,
+    icon: category.icon,
+  });
+  return { success: true };
+};
+export const updateStoreCategory = async (
+  storeslug: string,
+  editingId: string,
+  category: {
+    globalCategoryId: string;
+    name: string;
+    icon: string;
+  },
+) => {
+  const organizationData = await getOrganizationBySlug(storeslug);
+  if (!organizationData) {
+    throw new Error("Oranization doesn't exists");
+  }
+  const update = await db
+    .update(storeCategories)
+    .set({
+      organizationId: organizationData.id,
+      globalCategoryId: category.globalCategoryId,
+      name: category.name,
+      icon: category.icon,
+    })
+    .where(eq(storeCategories.id, editingId))
+    .returning();
+  return { success: true };
 };
 export const getProducts = async (
   storeslug: string,
@@ -222,6 +293,7 @@ export const getVariantsList = async (storeslug: string, productId: string) => {
   const variantsList = await db.query.variants.findMany({
     where: eq(variants.productId, productId),
     with: {
+      images: true,
       optionValues: {
         with: {
           productOptionValue: true,
@@ -268,11 +340,21 @@ export const getProductDetail = async (slug: string) => {
               productOptionValue: true,
             },
           },
+          images: true,
         },
       },
       images: true,
       category: true,
-      organization: true,
+      organization: {
+        with: {
+          settings: true,
+        },
+      },
+      reviews: {
+        with: {
+          user: true,
+        },
+      },
     },
   });
   if (!product) {
@@ -310,7 +392,11 @@ export const getRelatedProducts = async (
       },
       images: true,
       category: true,
-      organization: true,
+      organization: {
+        with: {
+          settings: true,
+        },
+      },
     },
     limit: 5,
   });
@@ -324,21 +410,32 @@ export const getFeaturedProduct = async () => {
       category: true,
       images: true,
       variants: true,
-      organization: true,
+      organization: {
+        with: {
+          settings: true,
+        },
+      },
     },
   });
-  const transformed = featured.map((product) => ({
-    id: product.id,
-    slug: product.slug,
-    image: product.images[0].url,
-    category: product.category?.name,
-    name: product.name,
-    brand: product.brand,
-    stock: product.variants[0].stock,
-    price: product.variants[0].price,
-    comparePrice: product.variants[0].comparePriceAt,
-    owner: product.organization.name,
-  }));
+
+  const transformed = featured
+    .filter((prod) => {
+      const hasStock = prod.variants.some((vari) => vari.stock > 0);
+      return hasStock || prod.organization.settings.showOutOfStock;
+    })
+    .map((product) => ({
+      id: product.id,
+      slug: product.slug,
+      image: product.images[0].url,
+      category: product.category?.name,
+      name: product.name,
+      brand: product.brand,
+      stock: product.variants[0].stock,
+      price: product.variants[0].price,
+      comparePrice: product.variants[0].comparePriceAt,
+      owner: product.organization.name,
+    }));
+
   // Get top-selling products based on variant sales
   const topProducts = await db
     .select({
@@ -348,25 +445,38 @@ export const getFeaturedProduct = async () => {
       category: categories.name,
       name: products.name,
       brand: products.brand,
+      showOutOfStock: organizationTables.showOutOfStock,
       price: min(variants.price).as("price"),
-      stock: min(variants.stock).as("stock"),
+      stock: max(variants.stock).as("stock"), // Changed to max to get highest stock
       comparePrice: min(variants.comparePriceAt).as("comparePriceAt"),
       owner: organization.name,
       totalSold: sum(orderItem.quantity).as("totalSold"),
     })
     .from(products)
-    .innerJoin(variants, eq(variants.productId, products.id)) // Connect products to variants
-    .innerJoin(orderItem, eq(orderItem.variantId, variants.id)) // Connect variants to order items
+    .innerJoin(variants, eq(variants.productId, products.id))
+    .innerJoin(orderItem, eq(orderItem.variantId, variants.id))
     .innerJoin(order, eq(order.id, orderItem.orderId))
     .leftJoin(categories, eq(products.categoryId, categories.id))
-    .leftJoin(organization, eq(order.organizationId, organization.id))
+    .leftJoin(organization, eq(products.organizationId, organization.id))
+    .leftJoin(
+      organizationTables,
+      eq(organizationTables.organizationId, organization.id),
+    )
     .leftJoin(productImages, eq(productImages.productId, products.id))
+    .where(
+      and(
+        eq(organizationTables.showOutOfStock, true),
+        gt(variants.stock, 0), // Only include variants with stock > 0
+      ),
+    )
     .groupBy(
       products.id,
+      products.slug,
       products.name,
       products.brand,
       categories.name,
       organization.name,
+      organizationTables.showOutOfStock,
     )
     .orderBy(desc(sum(orderItem.quantity)))
     .limit(10);
@@ -385,6 +495,7 @@ export const getFeaturedProduct = async () => {
     .groupBy(organization.id, organization.name)
     .orderBy(desc(sum(order.total)))
     .limit(5);
+
   return { topProducts, transformed, topStores };
 };
 export const addNewOptionToProduct = async (productId: string, option: any) => {
@@ -403,3 +514,51 @@ export const addNewOptionToProduct = async (productId: string, option: any) => {
   }
   return { success: true };
 };
+interface ReviweForm {
+  productId: string;
+  organizationId: string;
+  orderItemId: string;
+  rating: number;
+  title: string;
+  comment: string;
+}
+export const addReviewtoProduct = async (reviewForm: ReviweForm) => {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) {
+    return { error: "You dont have account" };
+  }
+  const [newReview] = await db
+    .insert(productReviews)
+    .values({
+      userId: session.user.id,
+      organizationId: reviewForm.organizationId,
+      productId: reviewForm.productId,
+      orderItemId: reviewForm.orderItemId,
+      title: reviewForm.title || "",
+      rating: reviewForm.rating,
+      comment: reviewForm.comment || "",
+    })
+    .returning();
+  return { success: true };
+};
+const utapi = new UTApi();
+export async function deleteImageFromUploadthing(url: string) {
+  const utapi = new UTApi();
+
+  try {
+    // 1. Extract the file key from the end of the URL
+    const fileKey = url.split("/").pop();
+
+    if (!fileKey) {
+      throw new Error("Invalid URL format");
+    }
+
+    // 2. Pass the extracted key to deleteFiles
+    await utapi.deleteFiles(fileKey);
+
+    return { success: true, message: "File deleted successfully" };
+  } catch (error) {
+    console.error("Deletion failed:", error);
+    return { success: false, error: (error as Error).message };
+  }
+}

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { X, UserRound, ClipboardPen } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 interface DeliveryItem {
   id: string;
@@ -50,6 +51,7 @@ const DeliveryOrderDetails: React.FC<DeliveryOrderDetailsProps> = ({
   const currentStatusIndex = deliveryStatuses.findIndex(
     (s) => s.status === deliveryDetails?.status,
   );
+  const { data: activeOrganization } = authClient.useActiveOrganization();
 
   const content = (
     <div className="flex flex-col">
@@ -157,7 +159,7 @@ const DeliveryOrderDetails: React.FC<DeliveryOrderDetailsProps> = ({
                     {item.quantity || 0}
                   </p>
                   <p className="text-green-600 text-sm font-medium whitespace-nowrap min-w-[60px] text-right">
-                    AFN {price.toFixed(2)}
+                    {activeOrganization?.currency} {price.toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -173,7 +175,9 @@ const DeliveryOrderDetails: React.FC<DeliveryOrderDetailsProps> = ({
         <div className="flex items-center justify-between py-2 mt-3 border-t border-gray-200">
           <h1 className="text-gray-800 font-medium">Total Amount</h1>
           <h1 className="text-gray-800 font-medium">
-            <span className="text-orange-500 text-sm mr-1">AFN</span>
+            <span className="text-orange-500 text-sm mr-1">
+              {activeOrganization?.currency}
+            </span>
             {deliveryDetails?.total || "0"}
           </h1>
         </div>

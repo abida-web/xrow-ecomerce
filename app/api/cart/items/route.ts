@@ -1,5 +1,5 @@
 import { db } from "@/drizzle/db";
-import { cart, cartItem, user } from "@/drizzle/schema";
+import { cart, cartItem, products, user } from "@/drizzle/schema";
 import { auth } from "@/lib/auth";
 import { and, count, eq } from "drizzle-orm";
 import { headers } from "next/headers";
@@ -39,6 +39,19 @@ export async function GET() {
                     url: true,
                   },
                 },
+                organization: {
+                  with: {
+                    shippingMethods: {
+                      with: {
+                        rates: {
+                          with: {
+                            shippingZone: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             },
           },
@@ -58,7 +71,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { variantId, quantity } = await req.json();
+  const { variantId, quantity, productId } = await req.json();
 
   if (!variantId || !quantity) {
     return NextResponse.json(
@@ -72,7 +85,22 @@ export async function POST(req: Request) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
+  const product = await db.query.products.findFirst({
+    where: eq(products.id, productId),
+    with: {
+      organization: {
+        with: {
+          settings: true,
+        },
+      },
+    },
+  });
+  if (product?.organization?.settings?.storeVisibility === false) {
+    return NextResponse.json(
+      { error: "Store is not available" },
+      { status: 403 },
+    );
+  }
   // Get user
   const userData = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),

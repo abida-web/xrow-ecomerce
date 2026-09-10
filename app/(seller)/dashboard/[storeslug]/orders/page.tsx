@@ -2,7 +2,7 @@
 
 import { assignDriver, updateStatus } from "@/app/actions/order-actions";
 import { badgeColorApplier } from "@/lib/helper-functions";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClipboardPaste, Eye, Search } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -48,7 +48,7 @@ const OrdersPage = () => {
   const [debouncedQuery] = useDebouncedValue(searchTerm, {
     wait: 500,
   });
-
+  const queryClient = useQueryClient();
   const { data, isLoading, refetch } = useQuery<Order[]>({
     queryKey: ["orders", storeslug, selectStatus, debouncedQuery, page],
     queryFn: async () => {
@@ -76,7 +76,7 @@ const OrdersPage = () => {
     },
     onSuccess: () => {
       toast.success("Status updated successfully");
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (error: Error) => {
       toast.error(error?.message || "Failed to update order status");
@@ -256,7 +256,7 @@ const OrdersPage = () => {
                   <td className="py-3 px-4 text-right text-gray-700 font-medium">
                     {new Intl.NumberFormat("en-US", {
                       style: "currency",
-                      currency: "AFN",
+                      currency: activeOrganization?.currency,
                     }).format(order.total)}
                   </td>
                   <td className="py-3 px-4">

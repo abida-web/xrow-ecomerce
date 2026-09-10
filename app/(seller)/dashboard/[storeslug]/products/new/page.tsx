@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { useProduct } from "@/store/product-store";
 import ProductForm from "../../../_components/ProductForm";
 import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const NewProduct = () => {
   const params = useParams();
@@ -19,7 +20,7 @@ const NewProduct = () => {
     fetchCategories,
     setStoreslug,
   } = useProduct();
-
+  const queryClient = useQueryClient();
   useEffect(() => {
     if (storeslug) {
       setStoreslug(storeslug as string);
@@ -60,6 +61,7 @@ const NewProduct = () => {
           variantImages: [],
           optionValues: [],
         });
+        queryClient.invalidateQueries({ queryKey: ["products"] });
       } else {
         toast.error("Product submission failed");
         // You might want to set an error state here

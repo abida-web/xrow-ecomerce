@@ -2,6 +2,7 @@
 import { db } from "@/drizzle/db";
 import {
   organization,
+  productImages,
   productOptions,
   productOptionValues,
   products,
@@ -19,7 +20,7 @@ export async function PATCH(
     const { id: productId } = await params;
     const body = await req.json();
     const { productForm, storeslug } = body;
-
+    const { images } = productForm;
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -55,7 +56,21 @@ export async function PATCH(
         ),
       )
       .returning();
+    await db
+      .delete(productImages)
+      .where(eq(productImages.productId, productId));
 
+    // Then insert new images
+    if (images && Array.isArray(images) && images.length > 0) {
+      const imageValues = images.map((image: any, index: number) => ({
+        productId: productId,
+        url: image.url,
+        isPrimary: index === 0,
+        key: image.filekey || image.key || image.fileKey || null,
+      }));
+
+      await db.insert(productImages).values(imageValues);
+    }
     if (!updatedProduct) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }

@@ -30,6 +30,7 @@ export async function GET(req: Request) {
     .selectDistinctOn([products.id], {
       id: products.id,
       name: products.name,
+      slug: products.slug,
       brand: products.brand,
       description: products.description,
       category: categories.name,

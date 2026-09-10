@@ -1,23 +1,15 @@
 "use client";
-import {
-  Bookmark,
-  Edit,
-  ImagePlus,
-  LayersPlus,
-  PackagePlus,
-  Plus,
-  X,
-} from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import { Bookmark, Edit, LayersPlus, PackagePlus, Plus, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import CustomInput from "./CustomeInput";
 import { useProduct } from "@/store/product-store";
+import { QueryObserverResult, RefetchOptions } from "@tanstack/react-query";
 import {
-  QueryObserverResult,
-  RefetchOptions,
-  useQuery,
-} from "@tanstack/react-query";
-import { addNewOptionToProduct } from "@/app/actions/product-actions";
+  addNewOptionToProduct,
+  deleteImageFromUploadthing,
+} from "@/app/actions/product-actions";
 import toast from "react-hot-toast";
+import { UploadButton } from "@/lib/utils/uploadthing";
 
 interface ProductFormProps {
   intialData?: any;
@@ -40,23 +32,21 @@ const ProductForm = ({
     productForm,
     setProductForm,
     categories,
-    uploading,
     currentVariant,
     handleAddVariant,
     removeVariant,
-    handleUploadImage,
     setCurrentVariant,
-    removeImage,
     fetchCategories,
     currentProductOption,
     setCurrentProductOption,
     handleAddProductOption,
   } = useProduct();
+
   const [newOptionValue, setNewOptionValue] = useState({
     name: "",
     value: [""],
   });
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
 
   // Initialize form with intialData when editing
   useEffect(() => {
@@ -76,6 +66,7 @@ const ProductForm = ({
         name: intialData.name || "",
         description: intialData.description || "",
         categoryId: intialData.categoryId || "",
+        storeCategoryId: intialData.storeCategoryId || "",
         status: intialData.status || "draft",
         featured: intialData.featured || false,
         brand: intialData.brand || "",
@@ -101,6 +92,7 @@ const ProductForm = ({
         name: "",
         description: "",
         categoryId: "",
+        storeCategoryId: "",
         status: "draft",
         featured: false,
         brand: "",
@@ -123,8 +115,18 @@ const ProductForm = ({
       refetch();
     }
   };
-
+  const removeImage = async (url: string) => {
+    const res = await deleteImageFromUploadthing(url);
+    if (res?.success) {
+      toast.success("Image deleted successfully");
+    } else {
+      toast.error("Failed to delete image");
+    }
+  };
   const displayVariants = productForm.variants;
+  const selectedCategory = categories.find(
+    (cat) => cat.id === selectedCategoryId,
+  );
 
   return (
     <div>
@@ -180,17 +182,41 @@ const ProductForm = ({
             <select
               className="bg-gray-50 px-4 py-2 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 border border-gray-200"
               value={productForm.categoryId}
-              onChange={(e) =>
+              onChange={(e) => {
+                const categoryId = e.target.value;
+                setSelectedCategoryId(categoryId);
                 setProductForm({
                   ...productForm,
-                  categoryId: e.target.value,
-                })
-              }
+                  categoryId: categoryId,
+                  storeCategoryId: "",
+                });
+              }}
             >
               <option className="bg-white" value="">
                 Select Category
               </option>
               {categories.map((cat: any) => (
+                <option className="bg-white" key={cat?.id} value={cat?.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="bg-gray-50 px-4 py-2 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 border border-gray-200"
+              value={productForm.storeCategoryId}
+              onChange={(e) =>
+                setProductForm({
+                  ...productForm,
+                  storeCategoryId: e.target.value,
+                })
+              }
+              disabled={!selectedCategoryId}
+            >
+              <option className="bg-white" value="">
+                Select store's category
+              </option>
+              {selectedCategory?.storeCategories.map((cat: any) => (
                 <option className="bg-white" key={cat?.id} value={cat?.id}>
                   {cat.name}
                 </option>
@@ -501,7 +527,73 @@ const ProductForm = ({
                   )}
                 </div>
               </div>
+              {currentVariant.variantImages.length > 0 ? (
+                <div className="grid grid-cols-3 gap-3 my-5 ">
+                  {currentVariant.variantImages.map((img: any, i: number) => (
+                    <div key={i}>
+                      <img
+                        src={img.thumb || img.url}
+                        alt={`Product ${i + 1}`}
+                        className={`w-full h-48 object-cover rounded-lg border border-gray-200`}
+                      />
+                      <button
+                        onClick={() => {
+                          const newImages = currentVariant.variantImages.filter(
+                            (_, index) => index !== i,
+                          );
+                          setCurrentVariant({
+                            ...currentVariant,
+                            variantImages: newImages,
+                          });
+                          removeImage(img.url);
+                        }}
+                        className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                      >
+                        <X size={16} className="text-white" />
+                      </button>
+                      <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-2 py-0.5 rounded">
+                        #{i + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500">
+                  Click to upload images for variants
+                </div>
+              )}
+              <UploadButton
+                endpoint="imageUploader"
+                onClientUploadComplete={(res) => {
+                  if (res && res.length > 0) {
+                    const newImages = res.map((file) => ({
+                      url: file.url,
+                      isPrimary: currentVariant.variantImages.length === 0, // Set the first uploaded image as primary if no images exist
+                      filekey: file.key,
+                    }));
 
+                    setCurrentVariant({
+                      ...currentVariant,
+                      variantImages: [
+                        ...currentVariant.variantImages,
+                        ...newImages,
+                      ],
+                    });
+
+                    toast.success(
+                      `${res.length} image(s) uploaded successfully`,
+                    );
+                  }
+                }}
+                onUploadError={(error: Error) => {
+                  toast.error(`Upload failed: ${error.message}`);
+                }}
+                appearance={{
+                  button:
+                    "bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg w-full transition-colors",
+                  container: "w-full",
+                }}
+              />
               <button
                 onClick={() => {
                   handleAddVariant();
@@ -560,13 +652,14 @@ const ProductForm = ({
           )}
         </div>
 
-        {/* Right Sidebar - Summary */}
+        {/* Right Sidebar - Upload Button */}
+        {/* Right Sidebar - Upload Button */}
         <div className="mt-3 bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-          <h1 className="font-semibold text-gray-800 mb-4">Upload Image</h1>
+          <h1 className="font-semibold text-gray-800 mb-4">Upload Images</h1>
 
-          {/* Image Grid */}
+          {/* Image Preview Grid */}
           {productForm.images.length > 0 && (
-            <div className="grid grid-cols-3 gap-3 mt-3">
+            <div className="grid grid-cols-3 gap-3 mb-5">
               {productForm.images.map((img: any, i: number) => (
                 <div
                   key={i}
@@ -575,10 +668,19 @@ const ProductForm = ({
                   <img
                     src={img.thumb || img.url}
                     alt={`Product ${i + 1}`}
-                    className={`w-full ${i === 0 ? "h-48" : "h-32"} object-cover rounded-lg`}
+                    className={`w-full ${i === 0 ? "h-48" : "h-32"} object-cover rounded-lg border border-gray-200`}
                   />
                   <button
-                    onClick={() => removeImage(i)}
+                    onClick={() => {
+                      const newImages = productForm.images.filter(
+                        (_, index) => index !== i,
+                      );
+                      setProductForm({
+                        ...productForm,
+                        images: newImages,
+                      });
+                      removeImage(img.url);
+                    }}
                     className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
                   >
                     <X size={16} className="text-white" />
@@ -591,51 +693,41 @@ const ProductForm = ({
             </div>
           )}
 
-          <div
-            className={`border-2 border-dashed my-5 rounded-lg p-6 text-center transition-all cursor-pointer
-            ${
-              uploading
-                ? "border-gray-300 bg-gray-50"
-                : "border-gray-300 hover:border-orange-400 hover:bg-orange-50"
-            }`}
-            onClick={() => !uploading && fileInputRef.current?.click()}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => {
-                const files = e.target.files;
-                if (files) {
-                  Array.from(files).forEach((file) => handleUploadImage(file));
-                }
-              }}
-              className="hidden"
-              disabled={uploading}
-            />
+          {/* Upload Button */}
+          <UploadButton
+            endpoint="imageUploader"
+            onClientUploadComplete={(res) => {
+              if (res && res.length > 0) {
+                const newImages = res.map((file) => ({
+                  url: file.url,
+                  thumb: file.url,
+                  display_url: file.url,
+                  name: file.name,
+                  filekey: file.key,
+                }));
 
-            <div className="flex flex-col items-center gap-2">
-              <ImagePlus
-                className={`w-8 h-8 ${uploading ? "text-gray-400 animate-pulse" : "text-gray-400"}`}
-              />
-              <p className="text-xs text-gray-500">
-                {uploading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="inline-block w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></span>
-                    Uploading...
-                  </span>
-                ) : (
-                  "Click to upload or drag and drop"
-                )}
-              </p>
-              <p className="text-gray-400 text-xs">PNG, JPG, GIF up to 10MB</p>
-            </div>
-          </div>
+                setProductForm({
+                  ...productForm,
+                  images: [...productForm.images, ...newImages],
+                });
 
-          {productForm.images.length === 0 && !uploading && (
-            <p className="text-gray-400 text-sm text-center py-4">
-              No images uploaded yet
+                toast.success(`${res.length} image(s) uploaded successfully`);
+              }
+            }}
+            onUploadError={(error: Error) => {
+              toast.error(`Upload failed: ${error.message}`);
+            }}
+            appearance={{
+              button:
+                "bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg w-full transition-colors",
+              container: "w-full",
+            }}
+          />
+
+          {/* Image count */}
+          {productForm.images.length > 0 && (
+            <p className="text-xs text-gray-500 mt-3">
+              {productForm.images.length} image(s) uploaded
             </p>
           )}
         </div>
@@ -643,13 +735,13 @@ const ProductForm = ({
 
       <button
         onClick={handleSubmit}
-        disabled={isSubmitting || uploading}
+        disabled={isSubmitting}
         className="mt-4 bg-orange-500 hover:bg-orange-600 text-white py-2 flex justify-center items-center gap-2 rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {isSubmitting || uploading ? (
+        {isSubmitting ? (
           <>
             <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            {uploading ? "Uploading..." : "Saving..."}
+            Saving...
           </>
         ) : (
           <>

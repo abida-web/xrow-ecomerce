@@ -4,7 +4,7 @@ import { defaultStatements } from "better-auth/plugins/organization/access";
 // Define all statements - include ALL default statements
 const statement = {
   ...defaultStatements,
-  project: ["create", "share", "update", "delete"],
+  project: ["create", "share", "update", "delete", "read"],
 } as const;
 
 export const ac = createAccessControl(statement);
@@ -38,10 +38,10 @@ export const owner = ac.newRole({
 
 export const driver = ac.newRole({
   // Driver only has project permissions
-  project: ["create", "update", "delete"],
+  project: ["read", "update", "delete"],
 });
 export const staff = ac.newRole({
   // Driver only has project permissions
   organization: ["update"],
-  project: ["update"],
+  project: ["update", "read"],
 });

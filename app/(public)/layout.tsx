@@ -10,14 +10,23 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [queryClient] = React.useState(() => new QueryClient());
+  const [queryClient] = React.useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            refetchOnWindowFocus: false,
+          },
+        },
+      }),
+  );
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen p-4 bg-white md:p-8">
+      <div className="min-h-screen overflow-x-hidden bg-white px-3 py-4 sm:px-5 md:p-8">
         <Navbar />
         {/* Main content */}
         <main className="  min-h-screen ">
-          <div className="max-w-7xl mx-auto">{children}</div>
+          <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
         <Footer />
       </div>

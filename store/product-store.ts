@@ -6,16 +6,6 @@ interface ProductOptionInput {
   name: string;
   value: string[];
 }
-interface VariantOptionValues {
-  optionId: string | number;
-  optionName: string;
-  optionValueId: string;
-}
-interface VariantImage {
-  id?: string;
-  url: string;
-  isPrimary: boolean;
-}
 
 interface Variant {
   id?: string;
@@ -28,16 +18,28 @@ interface Variant {
   optionValues: string[];
 }
 
+interface VariantImage {
+  id?: string;
+  url: string;
+  isPrimary: boolean;
+  filekey: string;
+}
+
 interface ImageData {
   id?: string;
   url: string;
   thumb?: string;
   display_url?: string;
+  filekey: string;
 }
 
 interface CategoryProps {
   id: string;
   name: string;
+  storeCategories: Array<{
+    id: string;
+    name: string;
+  }>;
 }
 
 type VariantKey = keyof Variant;
@@ -45,6 +47,7 @@ type VariantKey = keyof Variant;
 interface ProductState {
   productForm: {
     organizationId: string;
+    storeCategoryId: string;
     categoryId: string;
     name: string;
     slug: string;
@@ -57,7 +60,6 @@ interface ProductState {
     images: ImageData[];
   };
   categories: CategoryProps[];
-  uploading: boolean;
   currentVariant: Variant;
   storeslug: string;
   currentProductOption: ProductOptionInput;
@@ -65,7 +67,6 @@ interface ProductState {
   // Setters
   setProductForm: (form: any) => void;
   setCategories: (categories: CategoryProps[]) => void;
-  setUploading: (uploading: boolean) => void;
   setCurrentVariant: (variant: Variant) => void;
   setCurrentProductOption: (productOption: ProductOptionInput) => void;
   setStoreslug: (slug: string) => void;
@@ -80,12 +81,7 @@ interface ProductState {
   handleRemoveProductOption: (optId: string | number) => void;
   handleRemoveValueField: (optId: string | number, index: number) => void;
 
-  // Image handlers
-  handleUploadImage: (file: File) => Promise<string | null>;
-  handleUploadVariantImage: (
-    file: File,
-    variantIndex: number,
-  ) => Promise<string | null>;
+  // Image handlers (UploadThing will handle uploads directly in component)
   removeVariantImage: (variantIndex: number, imageIndex: number) => void;
   removeImage: (index: number) => void;
 
@@ -98,6 +94,7 @@ export const useProduct = create<ProductState>((set, get) => ({
   // Initial state
   productForm: {
     organizationId: "",
+    storeCategoryId: "",
     categoryId: "",
     name: "",
     description: "",
@@ -117,7 +114,6 @@ export const useProduct = create<ProductState>((set, get) => ({
   setCurrentProductOption: (currentProductOption) =>
     set({ currentProductOption }),
   categories: [],
-  uploading: false,
   currentVariant: {
     sku: "",
     price: "",
@@ -132,7 +128,6 @@ export const useProduct = create<ProductState>((set, get) => ({
   // Setters
   setProductForm: (form) => set({ productForm: form }),
   setCategories: (categories) => set({ categories }),
-  setUploading: (uploading) => set({ uploading }),
   setCurrentVariant: (currentVariant) => set({ currentVariant }),
   setStoreslug: (storeslug) => set({ storeslug }),
 
@@ -148,7 +143,6 @@ export const useProduct = create<ProductState>((set, get) => ({
 
   handleAddVariant: () => {
     const { currentVariant } = get();
-    // Validate required fields
     if (!currentVariant.sku || !currentVariant.price || !currentVariant.stock) {
       console.error("SKU, Price, and Stock are required");
       return;
@@ -227,98 +221,7 @@ export const useProduct = create<ProductState>((set, get) => ({
     }));
   },
 
-  // Image handlers
-  handleUploadImage: async (file) => {
-    set({ uploading: true });
-    const formData = new FormData();
-    formData.append("image", file);
-
-    try {
-      const response = await fetch(
-        "https://api.imgbb.com/1/upload?key=c9668feeda70f40e354b4e3ae6258cf8",
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        const imageData = {
-          url: data.data.url,
-          thumb: data.data.thumb?.url,
-          display_url: data.data.display_url,
-        };
-
-        set((state) => ({
-          productForm: {
-            ...state.productForm,
-            images: [...state.productForm.images, imageData],
-          },
-        }));
-
-        return data.data.url;
-      } else {
-        throw new Error(data.error?.message || "Upload failed");
-      }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      return null;
-    } finally {
-      set({ uploading: false });
-    }
-  },
-
-  handleUploadVariantImage: async (file, variantIndex) => {
-    set({ uploading: true });
-    const formData = new FormData();
-    formData.append("image", file);
-
-    try {
-      const response = await fetch(
-        "https://api.imgbb.com/1/upload?key=c9668feeda70f40e354b4e3ae6258cf8",
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        set((state) => ({
-          productForm: {
-            ...state.productForm,
-            variants: state.productForm.variants.map((variant, index) =>
-              index === variantIndex
-                ? {
-                    ...variant,
-                    variantImages: [
-                      ...variant.variantImages,
-                      {
-                        url: data.data.url,
-                        isPrimary: variant.variantImages.length === 0,
-                      },
-                    ],
-                  }
-                : variant,
-            ),
-          },
-        }));
-
-        return data.data.url;
-      } else {
-        throw new Error(data.error?.message || "Upload failed");
-      }
-    } catch (error) {
-      console.error("Error uploading variant image:", error);
-      return null;
-    } finally {
-      set({ uploading: false });
-    }
-  },
-
+  // Image removal handlers (no upload handlers - using UploadThing directly)
   removeImage: (index) => {
     set((state) => ({
       productForm: {
@@ -359,6 +262,7 @@ export const useProduct = create<ProductState>((set, get) => ({
     set({
       productForm: {
         organizationId: "",
+        storeCategoryId: "",
         categoryId: "",
         name: "",
         description: "",
@@ -384,7 +288,6 @@ export const useProduct = create<ProductState>((set, get) => ({
         name: "",
         value: [""],
       },
-      uploading: false,
     });
   },
 }));

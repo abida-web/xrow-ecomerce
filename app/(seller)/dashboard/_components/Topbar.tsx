@@ -24,7 +24,7 @@ import NotificationModal from "./NotificationModal";
 const Topbar = ({ storeSlug }: { storeSlug: string }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState("");
+  const [selectedType, setSelectedType] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch] = useDebouncedValue(searchTerm, { wait: 400 });
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -118,8 +118,8 @@ const Topbar = ({ storeSlug }: { storeSlug: string }) => {
         >
           <div className="relative w-full">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <div className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-gray-800 text-sm hover:border-gray-300 transition-colors">
-              Search products, categories and more...
+            <div className="w-full truncate whitespace-nowrap bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-gray-800 text-sm hover:border-gray-300 transition-colors">
+              Search products,customers,orders
             </div>
           </div>
         </button>
@@ -147,7 +147,7 @@ const Topbar = ({ storeSlug }: { storeSlug: string }) => {
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search products, categories and more..."
+                    placeholder="Search products,customers,orders"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -372,7 +372,7 @@ const Topbar = ({ storeSlug }: { storeSlug: string }) => {
                   className="fixed inset-0 z-40"
                   onClick={() => setIsProfileOpen(false)}
                 />
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="text-xs text-gray-500 truncate">
                       {sessionData?.user?.email || "No email"}

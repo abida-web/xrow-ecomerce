@@ -6,8 +6,17 @@ import {
   boolean,
   index,
   uniqueIndex,
+  integer,
+  uuid,
+  numeric,
 } from "drizzle-orm/pg-core";
 import { address, cart, order } from "./cart-schema";
+import {
+  notification,
+  productReviews,
+  storeCategories,
+} from "./product-schema";
+import { storeFrontPages } from "./store-sections";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -91,10 +100,21 @@ export const organization = pgTable(
     logo: text("logo"),
     createdAt: timestamp("created_at").notNull(),
     metadata: text("metadata"),
+    language: text("language").default("en"),
+    email: text("email").default("info@example.com"), // Example email
+    phone: text("phone").default("+93 700 123 456"), // Afghanistan phone format
+    country: text("country").default("Afghanistan"), // Default country
+    city: text("city").default("Kabul"), // Capital city default
+    address: text("address").default("Shahr-e-Naw, District 2"), // Example address
+    currency: text("currency").default("AFN"), // Afghanistan Afghani default
+    timezone: text("timezone").default("UTC+04:30"), // Afghanistan tim
   },
-  (table) => [uniqueIndex("organization_slug_uidx").on(table.slug)],
+  (table) => [
+    uniqueIndex("organization_slug_uidx").on(table.slug),
+    // Optional: Add index for email if you plan to search by it
+    index("organization_email_idx").on(table.email),
+  ],
 );
-
 export const organizationRole = pgTable(
   "organization_role",
   {
@@ -114,7 +134,65 @@ export const organizationRole = pgTable(
     index("organizationRole_role_idx").on(table.role),
   ],
 );
+export const organizationTables = pgTable("organization_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organization.id, { onDelete: "cascade" }),
 
+  // Store Settings
+  storeStatus: text("store_status").default("active"), // active, inactive, maintenance
+  storeVisibility: boolean("store_visibility").default(true),
+  guestCheckout: boolean("guest_checkout").default(true),
+  showOutOfStock: boolean("show_out_of_stock").default(false),
+  allReviews: boolean("all_reviews").default(true),
+
+  // Product Settings
+  productPerPage: integer("product_per_page").default(20),
+  productSort: text("product_sort").default("newest"), // newest, price_asc, price_desc, popularity
+
+  // Order Settings
+  autoCancelUnpaidOrder: boolean("auto_cancel_unpaid_order").default(false),
+  cancelMin: integer("cancel_min").default(30), // minutes
+
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export const shippingMethods = pgTable("shipping_methods", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export const shippingZones = pgTable("shipping_zones", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export const shippingRates = pgTable("shipping_rates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  shippingMethodId: uuid("shipping_method_id")
+    .notNull()
+    .references(() => shippingMethods.id, { onDelete: "cascade" }),
+  shippingZoneId: uuid("shipping_zone_id")
+    .notNull()
+    .references(() => shippingZones.id, { onDelete: "cascade" }),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 export const member = pgTable(
   "member",
   {
@@ -155,7 +233,26 @@ export const invitation = pgTable(
     index("invitation_email_idx").on(table.email),
   ],
 );
-
+export const newsLetterSubscribers = pgTable("newsletter_subscribers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const contactMessages = pgTable("contactMessages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  message: text("message").notNull(),
+  status: text("text").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
@@ -164,6 +261,7 @@ export const userRelations = relations(user, ({ many }) => ({
   orders: many(order, { relationName: "userOrders" }), // Added relationName
   driverOrders: many(order, { relationName: "driverOrders" }), // New relation for driver
   addresses: many(address),
+  reviews: many(productReviews),
 }));
 
 export const sessionRelations = relations(session, ({ one, many }) => ({
@@ -180,11 +278,25 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }));
 
-export const organizationRelations = relations(organization, ({ many }) => ({
-  organizationRoles: many(organizationRole),
-  members: many(member),
-  invitations: many(invitation),
-}));
+export const organizationRelations = relations(
+  organization,
+  ({ many, one }) => ({
+    organizationRoles: many(organizationRole),
+    members: many(member),
+    invitations: many(invitation),
+    newsLetters: many(newsLetterSubscribers),
+    settings: one(organizationTables, {
+      // 👈 Add this
+      fields: [organization.id],
+      references: [organizationTables.organizationId],
+    }),
+    shippingMethods: many(shippingMethods), // Add this
+    shippingZones: many(shippingZones),
+    storeCategories: many(storeCategories),
+    storeFrontPages: many(storeFrontPages),
+    notifications: many(notification),
+  }),
+);
 
 export const memberRelations = relations(member, ({ one }) => ({
   organization: one(organization, {
@@ -213,6 +325,15 @@ export const organizationRoleRelations = relations(
   ({ one }) => ({
     organization: one(organization, {
       fields: [organizationRole.organizationId],
+      references: [organization.id],
+    }),
+  }),
+);
+export const newsLetterSubscribersRelations = relations(
+  newsLetterSubscribers,
+  ({ one }) => ({
+    organization: one(organization, {
+      fields: [newsLetterSubscribers.organizationId],
       references: [organization.id],
     }),
   }),

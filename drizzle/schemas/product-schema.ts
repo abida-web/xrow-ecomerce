@@ -10,7 +10,8 @@ import {
   boolean,
   unique,
 } from "drizzle-orm/pg-core";
-import { organization } from "./auth-schema";
+import { organization, user } from "./auth-schema";
+import { order, orderItem } from "./cart-schema";
 
 const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -18,7 +19,13 @@ const categories = pgTable("categories", {
   icon: text("icon"),
   createdAt: timestamp("created_at").defaultNow(),
 });
-
+const storeCategories = pgTable("store_categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: text("organizations_id").references(() => organization.id),
+  globalCategoryId: uuid("global_category_id").references(() => categories.id),
+  name: text("name").notNull(),
+  icon: text("icon"),
+});
 const products = pgTable(
   "products",
   {
@@ -29,6 +36,12 @@ const products = pgTable(
     categoryId: uuid("category_id").references(() => categories.id, {
       onDelete: "set null",
     }),
+    storeCategoryId: uuid("store_category_id").references(
+      () => storeCategories.id,
+      {
+        onDelete: "set null",
+      },
+    ),
     featured: boolean("featured").default(false),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
@@ -67,23 +80,14 @@ const productOptions = pgTable(
     ),
   }),
 );
-const productOptionValues = pgTable(
-  "product_option_values",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    productOptionId: uuid("product_option_id")
-      .notNull()
-      .references(() => productOptions.id, { onDelete: "cascade" }),
-    value: text("value").notNull(),
-    createdAt: timestamp("created_at").defaultNow(),
-  },
-  (table) => ({
-    uniqueOptionValue: unique("product_option_values_unique").on(
-      table.productOptionId,
-      table.value,
-    ),
-  }),
-);
+const productOptionValues = pgTable("product_option_values", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  productOptionId: uuid("product_option_id")
+    .notNull()
+    .references(() => productOptions.id, { onDelete: "cascade" }),
+  value: text("value").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 const variants = pgTable("variants", {
   id: uuid("id").defaultRandom().primaryKey(),
   productId: uuid("product_id")
@@ -123,6 +127,8 @@ const variantImages = pgTable("variant_images", {
     .references(() => variants.id, { onDelete: "cascade" }),
   url: text("url").notNull(),
   isPrimary: boolean("is_primary").default(false),
+  key: text("key"),
+
   createdAt: timestamp("created_at").defaultNow(),
 });
 const productImages = pgTable("product_images", {
@@ -131,12 +137,14 @@ const productImages = pgTable("product_images", {
     .notNull()
     .references(() => products.id, { onDelete: "cascade" }),
   url: text("url").notNull(),
+  key: text("key"),
   isPrimary: boolean("is_primary").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export {
   categories,
+  storeCategories,
   products,
   variants,
   variantImages,
@@ -156,4 +164,22 @@ export const notification = pgTable("notifications", {
   entityId: text("entity_id"),
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
+});
+export const productReviews = pgTable("product_reviews", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  productId: uuid("product_id")
+    .references(() => products.id)
+    .notNull(),
+  organizationId: text("organization_id")
+    .references(() => organization.id)
+    .notNull(),
+  userId: text("user_id")
+    .references(() => user.id)
+    .notNull(),
+  orderItemId: uuid("order_item_id").references(() => orderItem.id),
+  rating: integer("rating").notNull(),
+  title: text("title"),
+  comment: text("comment"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

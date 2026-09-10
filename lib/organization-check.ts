@@ -8,6 +8,9 @@ export async function getOrganizationBySlug(
   try {
     const organizationData = await db.query.organization.findFirst({
       where: eq(organization.slug, storeslug),
+      with: {
+        settings: true,
+      },
     });
     if (!organizationData) {
       throw new Error("Oranization doesn't exists");

@@ -12,6 +12,7 @@ import {
   Users,
   LogOut,
   Store,
+  LayoutGrid,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -23,6 +24,12 @@ const navigations = [
     name: "Dashboard",
     href: "",
     icon: <LayoutDashboardIcon size={18} />,
+  },
+  {
+    id: 7,
+    name: "Categories",
+    href: "categories",
+    icon: <LayoutGrid size={18} />,
   },
   {
     id: 2,
@@ -49,9 +56,15 @@ const navigations = [
     icon: <Users size={18} />,
   },
   {
+    id: 8,
+    name: "Store front",
+    href: "storefront",
+    icon: <Store size={18} />,
+  },
+  {
     id: 6,
     name: "Settings",
-    href: "settings",
+    href: "settings/general",
     icon: <Cog size={18} />,
   },
 ];
@@ -111,7 +124,7 @@ const Sidbar = ({ storeSlug }: { storeSlug: string }) => {
               X
             </div>
             <div>
-              <img src="/logo.PNG" className="h-15 object-contain" alt="Logo" />
+              <img src="/logo.png" className="h-15 object-contain" alt="Logo" />
             </div>
           </Link>
         </div>

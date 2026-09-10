@@ -19,8 +19,8 @@ export async function sendOrganizationInviteEmail({
         <h2 style="color: #333;">You're invited to join ${organization.name}</h2>
         <p>Hello ${inviter.name},</p>
         <p>${inviter.name} invited you to join the ${organization.name} organization. Please click the button below to accept/reject the invitation:</p>
-        <a href="${process.env.BETTER_AUTH_URL}/${organization.name}/invites/${invitation.id}" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 16px 0;">Manage Invitation</a>
-        <p>Best regards,<br>Your App Team</p>
+        <a href="${process.env.BETTER_AUTH_URL}/invites/${organization.name}/${invitation.id}" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 16px 0;">Manage Invitation</a>
+        <p>Best regards,<br>Xrow</p>
       </div>
     `,
   });

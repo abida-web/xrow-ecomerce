@@ -4,7 +4,7 @@ import {
   addNewOptionToProduct,
   getProduct,
 } from "@/app/actions/product-actions";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useSearchParams } from "next/navigation";
 import ProductForm from "../../../_components/ProductForm";
 import { useProduct } from "@/store/product-store";
@@ -20,10 +20,11 @@ const EditPage = () => {
   const slug = getSearchParam ? String(getSearchParam) : "";
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { isPending, data, refetch } = useQuery({
-    queryKey: ["getProduct", storeslug, slug],
+    queryKey: ["product", storeslug, slug],
     queryFn: () => getProduct({ storeslug, slug }),
     enabled: !!slug, // Only run query if productId exists
   });
+  const queryClient = useQueryClient();
 
   if (isPending) {
     return (
@@ -47,6 +48,14 @@ const EditPage = () => {
       if (res.ok) {
         toast.success("Product edited successfully");
         setIsSubmitting(false);
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ["product", slug],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ["products"],
+          }),
+        ]);
       }
     } catch (error) {
       console.error(error);

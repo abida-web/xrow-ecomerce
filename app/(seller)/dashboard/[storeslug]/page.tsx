@@ -26,6 +26,7 @@ import {
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { badgeColorApplier } from "@/lib/helper-functions";
+import { authClient } from "@/lib/auth-client";
 
 ChartJS.register(
   CategoryScale,
@@ -43,6 +44,7 @@ const StorePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const params = useParams();
   const storeslug = String(params.storeslug);
+  const { data: activeOrganization } = authClient.useActiveOrganization();
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -70,7 +72,7 @@ const StorePage = () => {
     labels: chartLabels,
     datasets: [
       {
-        label: "Monthly Sales (AFN)",
+        label: "Monthly Sales ()",
         data: chartValues,
         fill: true,
         backgroundColor: (context: any) => {
@@ -115,7 +117,7 @@ const StorePage = () => {
         cornerRadius: 8,
         callbacks: {
           label: function (context: any) {
-            return `AFN ${context.parsed.y.toLocaleString()}`;
+            return `${activeOrganization?.currency} ${context.parsed.y.toLocaleString()}`;
           },
         },
       },
@@ -140,7 +142,7 @@ const StorePage = () => {
           color: "#6B7280",
           font: { size: 11 },
           callback: function (value: any) {
-            return "AFN " + value.toLocaleString();
+            return activeOrganization?.currency + value.toLocaleString();
           },
         },
       },
@@ -155,7 +157,7 @@ const StorePage = () => {
   const statCards = [
     {
       title: "Total Revenue",
-      value: `AFN ${Number(dashboardData?.totalRevenue).toLocaleString()}`,
+      value: `${activeOrganization?.currency} ${Number(dashboardData?.totalRevenue).toLocaleString()}`,
       icon: Wallet,
       color: "orange",
       gradient: "from-orange-50 to-orange-100/50",
@@ -368,7 +370,8 @@ const StorePage = () => {
 
                   <div className="flex items-center justify-between">
                     <p className="text-orange-600 font-bold text-lg">
-                      AFN {Number(order.price).toLocaleString()}
+                      {activeOrganization?.currency}{" "}
+                      {Number(order.price).toLocaleString()}
                     </p>
                     <div className="flex items-center gap-1.5">
                       <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -433,7 +436,7 @@ const StorePage = () => {
                   <td className="py-3 px-4 text-right text-gray-700 font-medium">
                     {new Intl.NumberFormat("en-US", {
                       style: "currency",
-                      currency: "AFN",
+                      currency: `${activeOrganization?.currency}`,
                     }).format(order.total)}
                   </td>
                   <td className="py-3 px-4">

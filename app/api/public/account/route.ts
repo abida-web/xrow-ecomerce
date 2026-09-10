@@ -22,13 +22,18 @@ export async function GET() {
                 with: {
                   product: {
                     columns: {
+                      id: true,
                       name: true,
+                    },
+                    with: {
+                      images: true,
                     },
                   },
                 },
               },
             },
           },
+          organization: true,
         },
       },
       accounts: true,

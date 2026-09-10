@@ -2,12 +2,29 @@
 
 import CustomInput from "@/app/(seller)/dashboard/_components/CustomeInput";
 import { getDefaultAddress } from "@/app/actions/getDefaultAddress";
+import { getOrganizationWithShippingSettings } from "@/app/actions/settings";
+import { authClient } from "@/lib/auth-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MinusCircle, PlusCircle, Trash2, X } from "lucide-react";
+import { MinusCircle, PlusCircle, Store, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 const CartPage = () => {
+  const { data: activeOrganization } = authClient.useActiveOrganization();
+
+  // ✅ Store shipping options per shop (keyed by organization ID)
+  const [selectedShippingOptions, setSelectedShippingOptions] = useState<
+    Record<
+      string,
+      {
+        methodId: string;
+        rateId: string;
+        rate: string;
+        methodName: string;
+      }
+    >
+  >({});
+
   const [address, setAddress] = useState({
     fullName: "",
     phone: "",
@@ -21,6 +38,7 @@ const CartPage = () => {
   });
   const [openCheckoutModal, setOpenCheckoutModal] = useState(false);
   const [useDefaultAddress, setUseDefaultAddress] = useState(false);
+
   const queryClient = useQueryClient();
 
   const { data: defaultAddress } = useQuery<any>({
@@ -128,9 +146,15 @@ const CartPage = () => {
     cartItems?.userCartItems?.reduce((curr: any, acc: any) => {
       return curr + acc.quantity * acc?.variant?.price;
     }, 0) || 0;
-  const shipping = subTotal > 300 ? 0 : 10;
+
+  // ✅ Calculate total shipping from all selected options
+  const totalShipping = Object.values(selectedShippingOptions).reduce(
+    (sum, opt) => sum + (opt.rate ? parseFloat(opt.rate) : 0),
+    0,
+  );
+
   const tax = subTotal > 1000 ? 10 : 0;
-  const total = subTotal + shipping + tax;
+  const total = subTotal + totalShipping + tax;
 
   const createOrderMutation = useMutation({
     mutationFn: async () => {
@@ -138,7 +162,10 @@ const CartPage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ address }),
+        body: JSON.stringify({
+          address,
+          shipping: selectedShippingOptions, // ✅ Send all shipping options
+        }),
       });
 
       if (!res.ok) {
@@ -151,6 +178,7 @@ const CartPage = () => {
       toast.success("Order placed successfully");
       refetch();
       queryClient.invalidateQueries({ queryKey: ["cart"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       setOpenCheckoutModal(false);
       setAddress({
         fullName: "",
@@ -164,8 +192,23 @@ const CartPage = () => {
         isDefault: true,
       });
       setUseDefaultAddress(false);
+      setSelectedShippingOptions({});
     },
   });
+
+  const groupedProducts = new Map();
+  for (let item of cartItems?.userCartItems || []) {
+    const orgId = item?.variant?.product?.organization?.id;
+    if (!groupedProducts.has(orgId)) {
+      groupedProducts.set(orgId, {
+        orgId: orgId,
+        orgName: item?.variant?.product?.organization?.name,
+        items: [],
+        methods: item?.variant?.product?.organization?.shippingMethods || [],
+      });
+    }
+    groupedProducts.get(orgId).items.push(item);
+  }
 
   const handlePlaceOrder = () => {
     if (
@@ -177,6 +220,17 @@ const CartPage = () => {
       toast.error("Please fill in all required address fields");
       return;
     }
+
+    // ✅ Check if all shops have shipping selected
+    const allSelected = Array.from(groupedProducts.keys()).every(
+      (orgId) => selectedShippingOptions[orgId]?.methodId,
+    );
+
+    if (!allSelected) {
+      toast.error("Please select a shipping method for each shop");
+      return;
+    }
+
     createOrderMutation.mutate();
   };
 
@@ -185,6 +239,26 @@ const CartPage = () => {
       ...prev,
       [field]: value,
     }));
+  };
+
+  // ✅ handleSelection per shop
+  const handleSelection = (
+    orgId: string,
+    methodId: string,
+    rateId: string,
+    rate: string,
+    methodName: string,
+  ) => {
+    setSelectedShippingOptions((prev) => ({
+      ...prev,
+      [orgId]: {
+        methodId,
+        rateId,
+        rate,
+        methodName,
+      },
+    }));
+    toast.success(`Selected ${methodName} - afg${rate}`);
   };
 
   if (isLoading) {
@@ -351,13 +425,11 @@ const CartPage = () => {
               </div>
 
               <button
-                onClick={handlePlaceOrder}
+                onClick={() => setOpenCheckoutModal(false)}
                 disabled={createOrderMutation.isPending}
                 className="mt-5 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 flex justify-center items-center gap-2 rounded-lg w-full transition-colors"
               >
-                {createOrderMutation.isPending
-                  ? "Placing Order..."
-                  : "Place Order"}
+                Add address
               </button>
             </div>
           </div>
@@ -370,80 +442,194 @@ const CartPage = () => {
             ) : (
               <>
                 <div className="flex flex-col gap-5">
-                  {cartItems?.userCartItems?.map((item: any) => {
-                    const subTotal = item.variant.price * item.quantity;
-                    return (
-                      <div key={item.id} className="flex items-center">
-                        <div className="grid grid-cols-4 items-center gap-5 flex-1 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                          <img
-                            src={item.variant?.product?.images?.[0]?.url}
-                            className="w-[80px] h-[100px] object-cover rounded-lg"
-                            alt={item.variant?.product?.name}
-                          />
-                          <div className="flex flex-col gap-1">
-                            <p className="font-medium text-gray-800">
-                              {item.variant?.product?.name}
-                            </p>
-                            <p className="text-gray-400 text-xs">
-                              #{item.variantId.slice(0, 10)}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {item?.variant?.optionValues
-                                .map((val: any) => val.productOptionValue.value)
-                                .join(" - ")}
-                            </p>
-                          </div>
-                          <div className="flex gap-5 items-center">
-                            <p className="bg-gray-100 py-1 text-xs px-1.5 rounded-full text-gray-600">
-                              {item.quantity}
-                            </p>
-                            <div className="flex flex-col gap-2">
-                              <button
-                                onClick={() =>
-                                  handleUpdateQuantity(
-                                    item.variantId,
-                                    Number(item.quantity) + 1,
-                                  )
-                                }
-                                disabled={updateQuantityMutation.isPending}
-                                className="hover:opacity-70 transition-opacity text-orange-500"
-                              >
-                                <PlusCircle size={20} />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleUpdateQuantity(
-                                    item.variantId,
-                                    item.quantity - 1,
-                                  )
-                                }
-                                disabled={updateQuantityMutation.isPending}
-                                className="hover:opacity-70 transition-opacity text-orange-500"
-                              >
-                                <MinusCircle size={20} />
-                              </button>
-                            </div>
-                          </div>
-                          <p className="text-gray-800">
-                            <span className="text-orange-500">afg</span>
-                            {subTotal.toFixed(2)}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteItem(item.variantId)}
-                          disabled={deleteItemMutation.isPending}
-                          className="ml-5 hover:text-red-500 hover:bg-red-50 p-2 transition-colors rounded-full text-gray-400"
+                  {Array.from(groupedProducts.entries()).map(
+                    ([shopId, grouped]) => {
+                      // ✅ Get selected option for this shop
+                      const selectedForShop = selectedShippingOptions[shopId];
+                      const isShopSelected = !!selectedForShop?.methodId;
+
+                      return (
+                        <div
+                          key={shopId}
+                          className="flex flex-col bg-white p-3 rounded-lg border border-gray-200 shadow-sm"
                         >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    );
-                  })}
+                          <span className="text-black mb-3 text-lg flex gap-2 items-center">
+                            <Store className="text-orange-500 h-5 w-5" />
+                            {grouped.orgName}
+                            {isShopSelected && (
+                              <span className="text-xs text-green-500 ml-2">
+                                ✓ Shipping selected
+                              </span>
+                            )}
+                          </span>
+                          <div className="flex flex-col gap-2">
+                            {grouped.items.map((item: any) => {
+                              const subTotal =
+                                item.variant.price * item.quantity;
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="flex items-center"
+                                >
+                                  <div className="grid grid-cols-4 items-center gap-5 flex-1">
+                                    <img
+                                      src={
+                                        item.variant?.product?.images?.[0]?.url
+                                      }
+                                      className="w-[80px] h-[100px] object-cover rounded-lg"
+                                      alt={item.variant?.product?.name}
+                                    />
+                                    <div className="flex flex-col gap-1">
+                                      <p className="font-medium text-gray-800">
+                                        {item.variant?.product?.name}
+                                      </p>
+                                      <p className="text-gray-400 text-xs">
+                                        #{item.variantId.slice(0, 10)}
+                                      </p>
+                                      <p className="text-sm text-gray-500">
+                                        {item?.variant?.optionValues
+                                          .map(
+                                            (val: any) =>
+                                              val.productOptionValue.value,
+                                          )
+                                          .join(" - ")}
+                                      </p>
+                                    </div>
+                                    <div className="flex gap-5 items-center">
+                                      <p className="bg-gray-100 py-1 text-xs px-1.5 rounded-full text-gray-600">
+                                        {item.quantity}
+                                      </p>
+                                      <div className="flex flex-col gap-2">
+                                        <button
+                                          onClick={() =>
+                                            handleUpdateQuantity(
+                                              item.variantId,
+                                              Number(item.quantity) + 1,
+                                            )
+                                          }
+                                          disabled={
+                                            updateQuantityMutation.isPending
+                                          }
+                                          className="hover:opacity-70 transition-opacity text-orange-500"
+                                        >
+                                          <PlusCircle size={20} />
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            handleUpdateQuantity(
+                                              item.variantId,
+                                              item.quantity - 1,
+                                            )
+                                          }
+                                          disabled={
+                                            updateQuantityMutation.isPending
+                                          }
+                                          className="hover:opacity-70 transition-opacity text-orange-500"
+                                        >
+                                          <MinusCircle size={20} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <p className="text-gray-800">
+                                      <span className="text-orange-500">
+                                        {activeOrganization?.currency}
+                                      </span>
+                                      {subTotal.toFixed(2)}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteItem(item.variantId)
+                                    }
+                                    disabled={deleteItemMutation.isPending}
+                                    className="ml-5 hover:text-red-500 hover:bg-red-50 p-2 transition-colors rounded-full text-gray-400"
+                                  >
+                                    <Trash2 size={20} />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <h1 className="py-2 text-black">
+                            Select a delivery method :
+                          </h1>
+                          <div className="text-black flex items-center gap-5 flex-wrap">
+                            {grouped?.methods
+                              ?.filter((me: any) => me.isActive === true)
+                              ?.map((method: any) => {
+                                const matchedRate = method.rates?.find(
+                                  (rate: any) =>
+                                    rate.shippingZone?.name.toLowerCase() ===
+                                    address.city.toLowerCase(),
+                                );
+                                const isSelected =
+                                  selectedForShop?.methodId === method.id;
+
+                                return (
+                                  <div
+                                    key={method.id}
+                                    className={`flex border-2 p-4 rounded-lg transition-all cursor-pointer ${
+                                      isSelected
+                                        ? "border-orange-500 bg-orange-50 shadow-md"
+                                        : "border-gray-200 hover:border-orange-300 hover:bg-orange-50/50"
+                                    }`}
+                                    onClick={() => {
+                                      if (matchedRate) {
+                                        handleSelection(
+                                          shopId, // ✅ Pass shop ID
+                                          method.id,
+                                          matchedRate.id,
+                                          matchedRate.price,
+                                          method.name,
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    {matchedRate ? (
+                                      <div className="flex items-center gap-4">
+                                        <div>
+                                          <p className="font-medium text-gray-800">
+                                            {method.name}
+                                          </p>
+                                          <p className="text-xs text-gray-400">
+                                            {method.description}
+                                          </p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="text-orange-500 font-bold text-lg">
+                                            {activeOrganization?.currency}
+                                            {matchedRate.price}
+                                          </p>
+                                          <p className="text-xs text-gray-400">
+                                            {matchedRate.shippingZone?.name}
+                                          </p>
+                                        </div>
+                                        {isSelected && (
+                                          <span className="text-green-500 text-sm ml-2">
+                                            ✓ Selected
+                                          </span>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="text-sm text-gray-400">
+                                        {method.name} - Not available in{" "}
+                                        {address.city || "your location"}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      );
+                    },
+                  )}
                 </div>
                 <div className="flex items-center gap-10">
                   <span className="text-gray-500">Subtotal:</span>
                   <span className="text-orange-500 font-semibold">
-                    afg{subTotal.toFixed(2)}
+                    {activeOrganization?.currency}
+                    {subTotal.toFixed(2)}
                   </span>
                 </div>
               </>
@@ -461,50 +647,55 @@ const CartPage = () => {
           <div className="flex justify-between items-center mt-3">
             <p className="text-gray-500">Sub Total</p>
             <p className="text-gray-700">
-              <span className="text-orange-500">afg</span>
+              <span className="text-orange-500">
+                {activeOrganization?.currency}
+              </span>
               {subTotal.toFixed(2)}
             </p>
           </div>
           <div className="flex justify-between items-center mt-3">
             <p className="text-gray-500">Shipping</p>
             <p className="text-gray-700">
-              <span className="text-orange-500">afg</span>
-              {shipping.toFixed(2)}
+              <span className="text-orange-500">
+                {activeOrganization?.currency}
+              </span>
+              {totalShipping.toFixed(2)}
             </p>
           </div>
           <div className="flex justify-between items-center mt-3 mb-4 border-b pb-4 border-gray-200">
             <p className="text-gray-500">Taxes</p>
             <p className="text-gray-700">
-              <span className="text-orange-500">afg</span>
+              <span className="text-orange-500">
+                {activeOrganization?.currency}
+              </span>
               {tax.toFixed(2)}
             </p>
           </div>
           <div className="flex justify-between items-center mt-3 mb-4">
             <p className="text-gray-600 font-semibold">Total</p>
             <p className="text-xl font-bold text-gray-800">
-              <span className="text-orange-500">afg</span>
+              <span className="text-orange-500">
+                {activeOrganization?.currency}
+              </span>
               {total.toFixed(2)}
             </p>
           </div>
           <button
-            onClick={
-              openCheckoutModal
-                ? handlePlaceOrder
-                : () => setOpenCheckoutModal(true)
-            }
-            disabled={
-              !cartItems?.userCartItems?.length || createOrderMutation.isPending
-            }
+            onClick={() => setOpenCheckoutModal(true)}
+            disabled={!cartItems?.userCartItems?.length}
             className="bg-orange-500 w-full hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-lg transition-colors"
           >
-            {openCheckoutModal
-              ? createOrderMutation.isPending
-                ? "Placing order..."
-                : "Place Order"
-              : "Proceed to Checkout"}
+            Add Your Address
           </button>
         </div>
       </div>
+      <button
+        onClick={handlePlaceOrder}
+        disabled={createOrderMutation.isPending}
+        className="bg-orange-500 w-full mt-5 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-lg transition-colors"
+      >
+        Place your order
+      </button>
     </div>
   );
 };

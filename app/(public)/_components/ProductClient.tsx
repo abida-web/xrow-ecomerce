@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { useDebounce } from "use-debounce";
+import { authClient } from "@/lib/auth-client";
 
 export default function ProductsClient() {
   const searchParams = useSearchParams();
@@ -85,6 +86,7 @@ export default function ProductsClient() {
       return await response.json();
     }, [getQueryParams]),
   });
+  const { data: activeOrganization } = authClient.useActiveOrganization();
 
   const categories = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -261,7 +263,10 @@ export default function ProductsClient() {
             />
             <div className="flex justify-between px-2.5 mt-2 text-xs text-gray-600">
               <span>{selectPriceRange.min}</span>
-              <span>{selectPriceRange.max.toLocaleString()} AFN</span>
+              <span>
+                {selectPriceRange.max.toLocaleString()}{" "}
+                {activeOrganization?.currency}
+              </span>
             </div>
 
             <label className="text-sm font-semibold text-gray-700 mt-4">

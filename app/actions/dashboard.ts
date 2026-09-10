@@ -12,6 +12,7 @@ import {
 import { auth } from "@/lib/auth";
 import { getOrganizationBySlug } from "@/lib/organization-check";
 import { and, asc, count, desc, eq, min, sql } from "drizzle-orm";
+import { headers } from "next/headers";
 
 export const totalDashboardOperation = async (storeslug: string) => {
   const storeData = await getOrganizationBySlug(storeslug);

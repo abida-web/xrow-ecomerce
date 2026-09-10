@@ -54,13 +54,17 @@ const ProductsPage = () => {
     enabled: !!storeslug,
     placeholderData: (previousData) => previousData,
   });
-
+  const queryClient = useQueryClient();
   const router = useRouter();
   const deleteProduct = async (productId: string) => {
     const res = await removeProduct({ storeslug, productId });
     if (res.success) {
       toast.success("Deleted the product");
       refetch();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
+        queryClient.invalidateQueries({ queryKey: ["products", productId] }),
+      ]);
     }
   };
 

@@ -53,6 +53,7 @@ export async function POST(req: Request) {
       productId: newProduct.id,
       url: image.url,
       isPrimary: index === 0,
+      key: image.key,
     }));
     await db.insert(productImages).values(imageValues);
   }
@@ -124,6 +125,7 @@ export async function POST(req: Request) {
             variantId: newVariant.id,
             url: image.url,
             isPrimary: index === 0,
+            key: image.key,
           })),
         );
       }

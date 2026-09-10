@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import Image from "next/image";
 import Link from "next/link";
 import ProductCard from "../../_components/ProductCard";
+import { Star } from "lucide-react";
 
 interface ImageProps {
   id: string;
@@ -233,7 +234,6 @@ export default function ProductDetailPage() {
       toast.error("This combination is not available");
       return;
     }
-
     if (quantity < 1 || quantity > variant.stock) {
       toast.error(`Quantity must be between 1 and ${variant.stock}`);
       return;
@@ -261,6 +261,7 @@ export default function ProductDetailPage() {
   };
   const path = usePathname();
   const breadCramps = path.split("/").filter((seg) => seg);
+  const images = currentVariant?.images || product?.images || [];
   if (isProductLoading || isCartLoading) {
     return (
       <div className="container mx-auto px-4 py-4">
@@ -274,7 +275,7 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="container mx-auto px-4 py-4">
-        <div className="text-center text-gray-400">
+        <div className="text-center text-gray-500">
           <h2 className="text-2xl">Product not found</h2>
         </div>
       </div>
@@ -289,7 +290,9 @@ export default function ProductDetailPage() {
           <div className="breadcrumbs text-sm">
             <ul>
               <li>
-                <a href="/">Home</a>
+                <a href="/" className="text-gray-600 hover:text-orange-500">
+                  Home
+                </a>
               </li>
               {breadCramps.map((crumb, index) => {
                 const href = "/" + breadCramps.slice(0, index + 1).join("/");
@@ -297,7 +300,9 @@ export default function ProductDetailPage() {
                   <li
                     key={index}
                     className={
-                      index === breadCramps.length - 1 ? "text-orange-500" : ""
+                      index === breadCramps.length - 1
+                        ? "text-orange-500"
+                        : "text-gray-600"
                     }
                   >
                     <a href={`${href}`}>
@@ -308,39 +313,40 @@ export default function ProductDetailPage() {
               })}
             </ul>
           </div>
-          <div className="relative lg:max-h-120 w-full rounded-lg overflow-hidden bg-gray-800">
+          <div className="relative lg:max-h-120 w-full rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
             <img
-              className="w-full h-full "
+              className="w-full h-full object-cover"
               src={currentImage?.url || "/placeholder-image.jpg"}
               alt={product.name}
             />
           </div>
 
           <div className="flex gap-3 mt-3 overflow-x-auto pb-2">
-            {product.images?.map((img: ImageProps) => (
-              <button
-                key={img.id}
-                onClick={() => setSelectedImage(img)}
-                className={`relative min-h-20 h-20 w-15 md:min-h-30 md:h-30 md:w-20 lg:max-h-60 lg:w-30 flex-shrink-0 rounded-lg overflow-hidden ${
-                  selectedImage?.id === img.id
-                    ? "ring-2 ring-orange-500"
-                    : "ring-1 ring-gray-700"
-                }`}
-              >
-                <img
-                  className="w-full h-full object-cover"
-                  src={img.url}
-                  alt="Product thumbnail"
-                />
-              </button>
-            ))}
+            {images &&
+              images?.map((img: ImageProps) => (
+                <button
+                  key={img.id}
+                  onClick={() => setSelectedImage(img)}
+                  className={`relative min-h-20 h-20 w-15 md:min-h-30 md:h-30 md:w-20 lg:max-h-60 lg:w-30 flex-shrink-0 rounded-lg overflow-hidden border ${
+                    selectedImage?.id === img.id
+                      ? "ring-2 ring-orange-500 border-orange-500"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <img
+                    className="w-full h-full object-cover"
+                    src={img.url}
+                    alt="Product thumbnail"
+                  />
+                </button>
+              ))}
           </div>
         </div>
 
         {/* Product Details Section */}
         <div className="flex flex-col">
-          <p className="text-sm text-gray-400">{product.category?.name}</p>
-          <h1 className="py-2 text-2xl md:text-3xl font-semibold">
+          <p className="text-sm text-gray-500">{product.category?.name}</p>
+          <h1 className="py-2 text-2xl md:text-3xl font-semibold text-gray-800">
             {product.name}
           </h1>
 
@@ -352,8 +358,8 @@ export default function ProductDetailPage() {
               <span
                 className={`text-sm font-medium px-3 py-1 rounded-full ${
                   isAvailable
-                    ? "text-green-500 bg-green-500/10"
-                    : "text-red-500 bg-red-500/10"
+                    ? "text-green-600 bg-green-100"
+                    : "text-red-600 bg-red-100"
                 }`}
               >
                 {isAvailable
@@ -365,13 +371,15 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          <p className="text-[#d1d5dc] mb-2 text-sm mt-2">
+          <p className="text-gray-600 mb-2 text-sm mt-2">
             {product.description}
           </p>
 
           <div className="flex flex-wrap gap-4 md:gap-20 mt-3">
-            <span className="text-gray-400">Brand:</span>
-            <span className="pb-5">{product.brand}</span>
+            <span className="text-gray-500">Brand:</span>
+            <span className="pb-5 text-gray-800 font-medium">
+              {product.brand}
+            </span>
           </div>
 
           {/* Product Options */}
@@ -379,7 +387,7 @@ export default function ProductDetailPage() {
             <>
               <div className="flex items-center gap-3 py-5">
                 <div className="w-1 h-6 bg-orange-500 rounded-full"></div>
-                <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider">
                   Product Options
                 </h2>
               </div>
@@ -387,7 +395,7 @@ export default function ProductDetailPage() {
               <div className="flex flex-col gap-4">
                 {product.options.map((opt: ProductOption) => (
                   <div key={opt.id} className="flex flex-col">
-                    <label className="text-[17px] text-gray-300 font-medium">
+                    <label className="text-[17px] text-gray-700 font-medium">
                       Select {opt.name}:
                     </label>
                     <div className="flex gap-3 items-center flex-wrap mt-2">
@@ -401,7 +409,7 @@ export default function ProductDetailPage() {
                             className={`px-5 py-2 rounded-lg transition-all font-medium ${
                               isSelected
                                 ? "bg-orange-500 text-white hover:bg-orange-600"
-                                : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
                             }`}
                           >
                             {val.value}
@@ -420,24 +428,24 @@ export default function ProductDetailPage() {
             onSubmit={handleAddToCart}
             className="flex flex-wrap items-center gap-4 mt-5"
           >
-            <div className="flex items-center bg-gray-800 rounded-lg overflow-hidden">
+            <div className="flex items-center bg-gray-100 border border-gray-300 rounded-lg overflow-hidden">
               <button
                 type="button"
                 onClick={() => handleQuantityChange(quantity - 1)}
                 disabled={quantity <= 1 || !isAvailable}
-                className="px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-xl font-bold"
+                className="px-4 py-2 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-xl font-bold"
                 aria-label="Decrease quantity"
               >
                 -
               </button>
-              <span className="px-6 py-2 text-white min-w-[3rem] text-center border-x border-gray-700">
+              <span className="px-6 py-2 text-gray-800 min-w-[3rem] text-center border-x border-gray-300">
                 {quantity}
               </span>
               <button
                 type="button"
                 onClick={() => handleQuantityChange(quantity + 1)}
                 disabled={quantity >= (variant?.stock || 0) || !isAvailable}
-                className="px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-xl font-bold"
+                className="px-4 py-2 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-xl font-bold"
                 aria-label="Increase quantity"
               >
                 +
@@ -451,35 +459,40 @@ export default function ProductDetailPage() {
                 updateQuantityMutation.isPending ||
                 !variant ||
                 !isAvailable ||
-                (product.options?.length > 0 && !allOptionsSelected)
+                (product.options?.length > 0 && !allOptionsSelected) ||
+                product?.organization?.settings?.storeVisibility === false
               }
-              className="  bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 flex-1 text-white font-bold py-3 px-8 rounded-lg transition-colors disabled:cursor-not-allowed"
+              className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:text-gray-500 flex-1 text-white font-bold py-3 px-8 rounded-lg transition-colors disabled:cursor-not-allowed"
             >
               {addToCartMutation.isPending || updateQuantityMutation.isPending
                 ? "Processing..."
-                : existingItem
-                  ? "Update Cart"
-                  : isAvailable
-                    ? "Add to Cart"
-                    : "Not Available"}
+                : product?.organization?.settings?.storeVisibility === false
+                  ? "Store Unavailable"
+                  : !isAvailable
+                    ? "Not Available"
+                    : product.options?.length > 0 && !allOptionsSelected
+                      ? "Select Options"
+                      : existingItem
+                        ? "Update Cart"
+                        : "Add to Cart"}
             </button>
           </form>
 
           {/* Show message if options not selected */}
           {product.options?.length > 0 && !allOptionsSelected && (
-            <p className="text-yellow-500 text-sm mt-2">
+            <p className="text-yellow-600 text-sm mt-2">
               Please select all options before adding to cart
             </p>
           )}
         </div>
       </div>
-      <div className="mt-5 aura text-orange-500">
-        <div className="card bg-black  text-base-content">
+      <div className="mt-5">
+        <div className="card bg-orange-50 border border-orange-200 rounded-xl">
           <div className="card-body p-4">
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-10 justify-between items-center">
-              <p className="text-sm text-gray-300 text-center sm:text-left">
+              <p className="text-sm text-gray-700 text-center sm:text-left">
                 Do you want to visit the shop and see more amazing products from{" "}
-                <span className="text-white font-medium">
+                <span className="text-gray-900 font-medium">
                   {product?.organization?.name}?
                 </span>
               </p>
@@ -494,7 +507,49 @@ export default function ProductDetailPage() {
         </div>
       </div>
       <div>
-        <h1 className="text-2xl py-5 font-bold">related Products</h1>
+        <h1 className="text-xl py-5 font-bold text-gray-800">
+          Customer Reviews
+        </h1>
+        <div className="flex  gap-3 ">
+          {product.reviews?.length > 0 ? (
+            product.reviews.map((rev, index) => (
+              <div
+                key={rev.id || index}
+                className="border-b border-gray-100 pb-3 shadow-sm shadow-orange-500 p-3 rounded-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="bg-orange-500 text-white text-xs font-medium px-2 py-1 rounded-full">
+                    {rev.user?.name?.[0]?.toUpperCase() || "U"}
+                  </span>
+                  <span className="font-medium text-sm text-gray-800">
+                    {rev.user?.name || "Anonymous"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 mt-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star} className="text-sm">
+                      <Star
+                        className={`h-4 w-4 ${star <= rev.rating ? "fill-orange-500 text-orange-500" : "text-gray-300"}`}
+                      />
+                    </span>
+                  ))}
+                </div>
+
+                {rev.comment && (
+                  <p className="text-sm text-gray-600 mt-1">{rev.comment}</p>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-gray-400">No reviews yet</p>
+          )}
+        </div>
+      </div>
+      <div>
+        <h1 className="text-xl py-5 font-bold text-gray-800">
+          Related Products
+        </h1>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
           {relatedProducts?.map((product, i: number) => (
             <ProductCard

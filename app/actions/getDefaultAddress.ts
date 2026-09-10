@@ -20,7 +20,7 @@ export async function getDefaultAddress() {
       ),
     });
 
-    return defaultAddress || null; // Return null if no address found
+    return defaultAddress;
   } catch (error) {
     console.error("Error fetching default address:", error);
     return null; // Return null on error

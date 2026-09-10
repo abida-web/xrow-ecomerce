@@ -64,7 +64,7 @@ const Navbar = () => {
         className="hidden md:flex justify-between items-center px-4 -mt-5"
       >
         <Link href="/">
-          <img src="/logo.PNG" className="h-20 object-cover" alt="Logo" />
+          <img src="/logo.png" className="h-20 object-cover" alt="Logo" />
         </Link>
         <div className="flex gap-5 text-gray-600 ">
           {navLinks.map((nav) => (
@@ -139,7 +139,7 @@ const Navbar = () => {
             </Link>
           ) : (
             <div className="flex items-center gap-2">
-              {activeOrganization && (
+              {activeOrganization && activeOrganization && (
                 <Link
                   href={`/dashboard/${activeOrganization?.slug}`}
                   className=" text-gray-600 hover:text-orange-500 transition-colors hover:bg-orange-500/20 p-2 rounded-full"

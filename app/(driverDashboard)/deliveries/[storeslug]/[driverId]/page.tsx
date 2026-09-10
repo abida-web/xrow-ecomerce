@@ -7,6 +7,7 @@ import {
   updateStatus,
 } from "@/app/actions/order-actions";
 import { order } from "@/drizzle/schema";
+import { authClient } from "@/lib/auth-client";
 import { badgeColorApplier } from "@/lib/helper-functions";
 import {
   ChevronRight,
@@ -110,7 +111,7 @@ const DeliveriesPage = () => {
   >(null);
   const [openDetails, setOpenDetails] = useState(false);
   const [loading, setLoading] = useState(true);
-
+  const { data: activeOrganization } = authClient.useActiveOrganization();
   async function fetchDeliveries() {
     try {
       setLoading(true);
@@ -216,7 +217,7 @@ const DeliveriesPage = () => {
                 </div>
                 <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
                   <h1 className="text-green-600 text-sm sm:text-base whitespace-nowrap font-medium">
-                    AFN {order.total || "0"}
+                    {activeOrganization?.currency} {order.total || "0"}
                   </h1>
                   <button
                     onClick={() => {

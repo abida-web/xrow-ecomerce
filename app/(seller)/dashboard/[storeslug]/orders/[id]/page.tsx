@@ -1,4 +1,5 @@
 "use client";
+import { authClient } from "@/lib/auth-client";
 import { badgeColorApplier } from "@/lib/helper-functions";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -139,6 +140,7 @@ const OrderDetailPage = () => {
     },
     enabled: !!orderId,
   });
+  const { data: activeOrganization } = authClient.useActiveOrganization();
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";
@@ -298,18 +300,20 @@ const OrderDetailPage = () => {
 
                       <div className="flex items-center gap-3 mt-2 flex-wrap">
                         <span className="text-green-600 font-medium">
-                          AFN {formatCurrency(item.priceAtPurchase)}
+                          {activeOrganization?.currency}{" "}
+                          {formatCurrency(item.priceAtPurchase)}
                         </span>
                         {item.variant?.comparePriceAt &&
                           Number(item.variant.comparePriceAt) >
                             Number(item.priceAtPurchase) && (
                             <span className="text-xs line-through text-gray-400">
-                              AFN {formatCurrency(item.variant.comparePriceAt)}
+                              {activeOrganization?.currency}{" "}
+                              {formatCurrency(item.variant.comparePriceAt)}
                             </span>
                           )}
                         <span className="text-gray-500">× {item.quantity}</span>
                         <span className="text-orange-500 font-semibold">
-                          AFN{" "}
+                          {activeOrganization?.currency}
                           {formatCurrency(
                             Number(item.priceAtPurchase) *
                               Number(item.quantity),
@@ -332,7 +336,7 @@ const OrderDetailPage = () => {
               <div className="flex justify-between items-center">
                 <p className="text-gray-500">Sub Total</p>
                 <p className="text-gray-700">
-                  AFN {formatCurrency(data.subtotal)}
+                  {activeOrganization?.currency} {formatCurrency(data.subtotal)}
                 </p>
               </div>
               <div className="flex justify-between items-center">
@@ -343,7 +347,7 @@ const OrderDetailPage = () => {
                 <p className="text-gray-600 font-semibold">Total</p>
                 <p>
                   <span className="text-orange-500 font-bold text-lg">
-                    AFN {formatCurrency(data.total)}
+                    {activeOrganization?.currency} {formatCurrency(data.total)}
                   </span>
                 </p>
               </div>

@@ -6,6 +6,7 @@ import {
   notification,
   order,
   orderItem,
+  organizationTables,
   variants,
 } from "@/drizzle/schema";
 import { auth } from "@/lib/auth";
@@ -30,7 +31,7 @@ interface CartItemWithVariant {
 }
 
 export async function POST(req: Request) {
-  const { address: addressData } = await req.json();
+  const { address: addressData, shipping: shippingData } = await req.json();
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session) {
@@ -50,7 +51,15 @@ export async function POST(req: Request) {
     with: {
       variant: {
         with: {
-          product: true,
+          product: {
+            with: {
+              organization: {
+                with: {
+                  settings: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -97,6 +106,16 @@ export async function POST(req: Request) {
     if (!groupedOrders.has(orgId)) {
       groupedOrders.set(orgId, []);
     }
+    if (
+      item.variant?.product?.organization?.settings?.storeVisibility === false
+    ) {
+      return NextResponse.json(
+        {
+          error: `Store ${item.variant.product.organization.name} is currently closed`,
+        },
+        { status: 400 },
+      );
+    }
     const arrayItems = groupedOrders.get(orgId);
     arrayItems.push(item);
   }
@@ -106,7 +125,17 @@ export async function POST(req: Request) {
     const orgSubtotal = items.reduce((sum: number, item: any) => {
       return sum + item.quantity * item.variant.price;
     }, 0);
+    const OrgShipping = shippingData?.[orgId];
 
+    if (!OrgShipping || !OrgShipping.methodId) {
+      return NextResponse.json(
+        {
+          error: `Shipping method not selected for organization ${orgId}`,
+          code: "MISSING_SHIPPING",
+        },
+        { status: 400 },
+      );
+    }
     // Create ONE order for this organization
     const [newOrder] = await db
       .insert(order)
@@ -116,6 +145,10 @@ export async function POST(req: Request) {
         status: "pending",
         subtotal: orgSubtotal.toString(),
         total: orgSubtotal.toString(),
+        shippingMethodId: OrgShipping.methodId,
+        shippingRateId: OrgShipping.rateId,
+        shippingMethodName: OrgShipping.methodName,
+        shippingRateName: OrgShipping.rate,
         shippingFullName: addressData.fullName,
         shippingPhone: addressData.phone,
         shippingEmail: addressData.email,

@@ -63,7 +63,7 @@ const SignupContent = () => {
   }
 
   return (
-    <div className="grid grid-cols-2 min-h-screen">
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
       <div className="bg-orange-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-4xl font-bold text-orange-500">Xrow</h2>
@@ -71,12 +71,12 @@ const SignupContent = () => {
         </div>
       </div>
 
-      <div className="flex items-center justify-center px-20 bg-white">
+      <div className="flex items-center justify-center bg-white px-4 py-10 sm:px-8 lg:px-12 xl:px-20">
         <div className="w-full max-w-md">
           <span className="inline-block bg-orange-100 rounded-full p-2">
             <UsersRound className="w-12 h-12 text-orange-500" />
           </span>
-          <h1 className="text-5xl font-semibold mt-5 text-gray-800">
+          <h1 className="mt-5 text-3xl font-semibold text-gray-800 sm:text-5xl">
             Get Started
           </h1>
           <p className="py-6 text-xs text-gray-500">

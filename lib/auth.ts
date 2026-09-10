@@ -47,6 +47,62 @@ export const auth = betterAuth({
 
   plugins: [
     organization({
+      schema: {
+        organization: {
+          modelName: "organization",
+          additionalFields: {
+            description: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+
+            email: {
+              type: "string",
+              input: true,
+              required: false,
+              format: "email",
+            },
+            phone: {
+              type: "string",
+              input: true,
+              required: false,
+              format: "phone",
+            },
+            country: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+            city: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+            address: {
+              type: "string",
+              input: true,
+              required: false,
+              multiline: true,
+            },
+            currency: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+            timezone: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+            language: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+          },
+        },
+      },
       ac,
       roles: {
         owner,

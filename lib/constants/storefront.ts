@@ -1,0 +1,16 @@
+export const pageTypes = [
+  { name: "Home", type: "home" },
+  { name: "Products", type: "products" },
+  { name: "Product Categories", type: "categories" },
+  { name: "Cart", type: "cart" },
+  { name: "Checkout", type: "checkout" },
+  { name: "About", type: "about" },
+  { name: "Contact", type: "contact" },
+  { name: "FAQ", type: "faq" },
+  { name: "Terms & Conditions", type: "terms" },
+  { name: "Privacy Policy", type: "privacy" },
+  { name: "Account", type: "account" },
+  { name: "Orders", type: "orders" },
+  { name: "Wishlist", type: "wishlist" },
+  { name: "Blog", type: "blog" },
+];

@@ -69,8 +69,8 @@ const InvitationPage = () => {
 
       toast.success("Invitation accepted successfully!");
 
-      if (data?.invitation?.organizationId) {
-        router.push(`/${storeslug}/deliveries/${data.member.userId}`);
+      if (data?.invitation?.role === "driver") {
+        router.push(`/deliveries/${storeslug}/${data.member.userId}`);
       } else {
         router.push("/");
       }
